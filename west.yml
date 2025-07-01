@@ -240,7 +240,7 @@ manifest:
       groups:
         - hal
     - name: hal_stm32
-      url: ssh://gitolite@codex.cro.st.com/orlando2assp/hal_stm32.git
+      url: https://github.com/STM32-OSF/hal_stm32.git
       revision: betzw_wb
       path: modules/hal/stm32
       groups:
