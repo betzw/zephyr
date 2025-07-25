@@ -7,6 +7,7 @@
 /*
  * Copyright (c) 2019 Linaro Limited.
  * Copyright 2025 NXP
+ * Copyright (c) 2025 STMicroelectronics
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -143,12 +144,15 @@ struct video_caps {
  * Represent a video frame.
  */
 struct video_buffer {
+	/** Pointer to driver specific data. */
+	/* It must be kept as first field of the struct if used for @ref k_fifo APIs. */
+	void *driver_data;
 	/** type of the buffer */
 	enum video_buf_type type;
-	/** pointer to driver specific data. */
-	void *driver_data;
 	/** pointer to the start of the buffer. */
 	uint8_t *buffer;
+	/** index of the buffer, optionally set by the application */
+	uint8_t index;
 	/** size of the buffer in bytes. */
 	uint32_t size;
 	/** number of bytes occupied by the valid data in the buffer. */
@@ -238,36 +242,71 @@ enum video_signal_result {
 };
 
 /**
- * @typedef video_api_set_format_t
- * @brief Set video format
+ * @struct video_selection_target
+ * @brief Video selection target enum
  *
- * See video_set_format() for argument descriptions.
+ * Used to indicate which selection to query or set on a video device
  */
-typedef int (*video_api_set_format_t)(const struct device *dev, struct video_format *fmt);
+enum video_selection_target {
+	/** Current crop setting */
+	VIDEO_SEL_TGT_CROP,
+	/** Crop bound (aka the maximum crop achievable) */
+	VIDEO_SEL_TGT_CROP_BOUND,
+	/** Native size of the input frame */
+	VIDEO_SEL_TGT_NATIVE_SIZE,
+	/** Current compose setting */
+	VIDEO_SEL_TGT_COMPOSE,
+	/** Compose bound (aka the maximum compose achievable) */
+	VIDEO_SEL_TGT_COMPOSE_BOUND,
+};
 
 /**
- * @typedef video_api_get_format_t
- * @brief Get current video format
+ * @struct video_rect
+ * @brief Description of a rectangle area.
  *
- * See video_get_format() for argument descriptions.
+ * Used for crop/compose and possibly within drivers as well
  */
-typedef int (*video_api_get_format_t)(const struct device *dev, struct video_format *fmt);
+struct video_rect {
+	/** left offset of selection rectangle */
+	uint32_t left;
+	/** top offset of selection rectangle */
+	uint32_t top;
+	/** width of selection rectangle */
+	uint32_t width;
+	/** height of selection rectangle */
+	uint32_t height;
+};
 
 /**
- * @typedef video_api_set_frmival_t
- * @brief Set video frame interval
+ * @struct video_selection
+ * @brief Video selection (crop / compose) structure
  *
- * See video_set_frmival() for argument descriptions.
+ * Used to describe the query and set selection target on a video device
  */
-typedef int (*video_api_set_frmival_t)(const struct device *dev, struct video_frmival *frmival);
+struct video_selection {
+	/** buffer type, allow to select for device having both input and output */
+	enum video_buf_type type;
+	/** selection target enum */
+	enum video_selection_target target;
+	/** selection target rectangle */
+	struct video_rect rect;
+};
 
 /**
- * @typedef video_api_get_frmival_t
- * @brief Get current video frame interval
+ * @typedef video_api_format_t
+ * @brief Function pointer type for video_set/get_format()
  *
- * See video_get_frmival() for argument descriptions.
+ * See video_set/get_format() for argument descriptions.
  */
-typedef int (*video_api_get_frmival_t)(const struct device *dev, struct video_frmival *frmival);
+typedef int (*video_api_format_t)(const struct device *dev, struct video_format *fmt);
+
+/**
+ * @typedef video_api_frmival_t
+ * @brief Function pointer type for video_set/get_frmival()
+ *
+ * See video_set/get_frmival() for argument descriptions.
+ */
+typedef int (*video_api_frmival_t)(const struct device *dev, struct video_frmival *frmival);
 
 /**
  * @typedef video_api_enum_frmival_t
@@ -343,10 +382,18 @@ typedef int (*video_api_get_caps_t)(const struct device *dev, struct video_caps 
  */
 typedef int (*video_api_set_signal_t)(const struct device *dev, struct k_poll_signal *sig);
 
+/**
+ * @typedef video_api_selection_t
+ * @brief Get/Set video selection (crop / compose)
+ *
+ * See @ref video_set_selection and @ref video_get_selection for argument descriptions.
+ */
+typedef int (*video_api_selection_t)(const struct device *dev, struct video_selection *sel);
+
 __subsystem struct video_driver_api {
 	/* mandatory callbacks */
-	video_api_set_format_t set_format;
-	video_api_get_format_t get_format;
+	video_api_format_t set_format;
+	video_api_format_t get_format;
 	video_api_set_stream_t set_stream;
 	video_api_get_caps_t get_caps;
 	/* optional callbacks */
@@ -356,9 +403,11 @@ __subsystem struct video_driver_api {
 	video_api_ctrl_t set_ctrl;
 	video_api_ctrl_t get_volatile_ctrl;
 	video_api_set_signal_t set_signal;
-	video_api_set_frmival_t set_frmival;
-	video_api_get_frmival_t get_frmival;
+	video_api_frmival_t set_frmival;
+	video_api_frmival_t get_frmival;
 	video_api_enum_frmival_t enum_frmival;
+	video_api_selection_t set_selection;
+	video_api_selection_t get_selection;
 };
 
 /**
@@ -376,8 +425,12 @@ __subsystem struct video_driver_api {
  */
 static inline int video_set_format(const struct device *dev, struct video_format *fmt)
 {
-	const struct video_driver_api *api = (const struct video_driver_api *)dev->api;
+	const struct video_driver_api *api;
 
+	__ASSERT_NO_MSG(dev != NULL);
+	__ASSERT_NO_MSG(fmt != NULL);
+
+	api = (const struct video_driver_api *)dev->api;
 	if (api->set_format == NULL) {
 		return -ENOSYS;
 	}
@@ -397,8 +450,12 @@ static inline int video_set_format(const struct device *dev, struct video_format
  */
 static inline int video_get_format(const struct device *dev, struct video_format *fmt)
 {
-	const struct video_driver_api *api = (const struct video_driver_api *)dev->api;
+	const struct video_driver_api *api;
 
+	__ASSERT_NO_MSG(dev != NULL);
+	__ASSERT_NO_MSG(fmt != NULL);
+
+	api = (const struct video_driver_api *)dev->api;
 	if (api->get_format == NULL) {
 		return -ENOSYS;
 	}
@@ -424,8 +481,16 @@ static inline int video_get_format(const struct device *dev, struct video_format
  */
 static inline int video_set_frmival(const struct device *dev, struct video_frmival *frmival)
 {
-	const struct video_driver_api *api = (const struct video_driver_api *)dev->api;
+	const struct video_driver_api *api;
 
+	__ASSERT_NO_MSG(dev != NULL);
+	__ASSERT_NO_MSG(frmival != NULL);
+
+	if (frmival->numerator == 0 || frmival->denominator == 0) {
+		return -EINVAL;
+	}
+
+	api = (const struct video_driver_api *)dev->api;
 	if (api->set_frmival == NULL) {
 		return -ENOSYS;
 	}
@@ -448,8 +513,12 @@ static inline int video_set_frmival(const struct device *dev, struct video_frmiv
  */
 static inline int video_get_frmival(const struct device *dev, struct video_frmival *frmival)
 {
-	const struct video_driver_api *api = (const struct video_driver_api *)dev->api;
+	const struct video_driver_api *api;
 
+	__ASSERT_NO_MSG(dev != NULL);
+	__ASSERT_NO_MSG(frmival != NULL);
+
+	api = (const struct video_driver_api *)dev->api;
 	if (api->get_frmival == NULL) {
 		return -ENOSYS;
 	}
@@ -476,8 +545,13 @@ static inline int video_get_frmival(const struct device *dev, struct video_frmiv
  */
 static inline int video_enum_frmival(const struct device *dev, struct video_frmival_enum *fie)
 {
-	const struct video_driver_api *api = (const struct video_driver_api *)dev->api;
+	const struct video_driver_api *api;
 
+	__ASSERT_NO_MSG(dev != NULL);
+	__ASSERT_NO_MSG(fie != NULL);
+	__ASSERT_NO_MSG(fie->format != NULL);
+
+	api = (const struct video_driver_api *)dev->api;
 	if (api->enum_frmival == NULL) {
 		return -ENOSYS;
 	}
@@ -502,6 +576,11 @@ static inline int video_enqueue(const struct device *dev, struct video_buffer *b
 {
 	const struct video_driver_api *api = (const struct video_driver_api *)dev->api;
 
+	__ASSERT_NO_MSG(dev != NULL);
+	__ASSERT_NO_MSG(buf != NULL);
+	__ASSERT_NO_MSG(buf->buffer != NULL);
+
+	api = (const struct video_driver_api *)dev->api;
 	if (api->enqueue == NULL) {
 		return -ENOSYS;
 	}
@@ -526,8 +605,12 @@ static inline int video_enqueue(const struct device *dev, struct video_buffer *b
 static inline int video_dequeue(const struct device *dev, struct video_buffer **buf,
 				k_timeout_t timeout)
 {
-	const struct video_driver_api *api = (const struct video_driver_api *)dev->api;
+	const struct video_driver_api *api;
 
+	__ASSERT_NO_MSG(dev != NULL);
+	__ASSERT_NO_MSG(buf != NULL);
+
+	api = (const struct video_driver_api *)dev->api;
 	if (api->dequeue == NULL) {
 		return -ENOSYS;
 	}
@@ -550,8 +633,11 @@ static inline int video_dequeue(const struct device *dev, struct video_buffer **
  */
 static inline int video_flush(const struct device *dev, bool cancel)
 {
-	const struct video_driver_api *api = (const struct video_driver_api *)dev->api;
+	const struct video_driver_api *api;
 
+	__ASSERT_NO_MSG(dev != NULL);
+
+	api = (const struct video_driver_api *)dev->api;
 	if (api->flush == NULL) {
 		return -ENOSYS;
 	}
@@ -576,8 +662,11 @@ static inline int video_flush(const struct device *dev, bool cancel)
  */
 static inline int video_stream_start(const struct device *dev, enum video_buf_type type)
 {
-	const struct video_driver_api *api = (const struct video_driver_api *)dev->api;
+	const struct video_driver_api *api;
 
+	__ASSERT_NO_MSG(dev != NULL);
+
+	api = (const struct video_driver_api *)dev->api;
 	if (api->set_stream == NULL) {
 		return -ENOSYS;
 	}
@@ -599,9 +688,12 @@ static inline int video_stream_start(const struct device *dev, enum video_buf_ty
  */
 static inline int video_stream_stop(const struct device *dev, enum video_buf_type type)
 {
-	const struct video_driver_api *api = (const struct video_driver_api *)dev->api;
+	const struct video_driver_api *api;
 	int ret;
 
+	__ASSERT_NO_MSG(dev != NULL);
+
+	api = (const struct video_driver_api *)dev->api;
 	if (api->set_stream == NULL) {
 		return -ENOSYS;
 	}
@@ -622,8 +714,12 @@ static inline int video_stream_stop(const struct device *dev, enum video_buf_typ
  */
 static inline int video_get_caps(const struct device *dev, struct video_caps *caps)
 {
-	const struct video_driver_api *api = (const struct video_driver_api *)dev->api;
+	const struct video_driver_api *api;
 
+	__ASSERT_NO_MSG(dev != NULL);
+	__ASSERT_NO_MSG(caps != NULL);
+
+	api = (const struct video_driver_api *)dev->api;
 	if (api->get_caps == NULL) {
 		return -ENOSYS;
 	}
@@ -677,14 +773,13 @@ struct video_ctrl_query;
  * difficult. Hence, the best way to enumerate all kinds of device's supported controls is to
  * iterate with VIDEO_CTRL_FLAG_NEXT_CTRL.
  *
- * @param dev Pointer to the device structure.
  * @param cq Pointer to the control query struct.
  *
  * @retval 0 If successful.
  * @retval -EINVAL If the control id is invalid.
  * @retval -ENOTSUP If the control id is not supported.
  */
-int video_query_ctrl(const struct device *dev, struct video_ctrl_query *cq);
+int video_query_ctrl(struct video_ctrl_query *cq);
 
 /**
  * @brief Print all the information of a control.
@@ -693,10 +788,9 @@ int video_query_ctrl(const struct device *dev, struct video_ctrl_query *cq);
  * menu (if any) and current value, i.e. by invoking the video_get_ctrl(), in a
  * human readble format.
  *
- * @param dev Pointer to the device structure.
  * @param cq Pointer to the control query struct.
  */
-void video_print_ctrl(const struct device *const dev, const struct video_ctrl_query *const cq);
+void video_print_ctrl(const struct video_ctrl_query *const cq);
 
 /**
  * @brief Register/Unregister k_poll signal for a video endpoint.
@@ -712,13 +806,83 @@ void video_print_ctrl(const struct device *const dev, const struct video_ctrl_qu
  */
 static inline int video_set_signal(const struct device *dev, struct k_poll_signal *sig)
 {
-	const struct video_driver_api *api = (const struct video_driver_api *)dev->api;
+	const struct video_driver_api *api;
 
+	__ASSERT_NO_MSG(dev != NULL);
+	__ASSERT_NO_MSG(sig != NULL);
+
+	api = (const struct video_driver_api *)dev->api;
 	if (api->set_signal == NULL) {
 		return -ENOSYS;
 	}
 
 	return api->set_signal(dev, sig);
+}
+
+/**
+ * @brief Set video selection (crop/compose).
+ *
+ * Configure the optional crop and compose feature of a video device.
+ * Crop is first applied on the input frame, and the result of that crop is applied
+ * to the compose. The result of the compose (width/height) is equal to the format
+ * width/height given to the @ref video_set_format function.
+ *
+ * Some targets are inter-dependents. For instance, setting a @ref VIDEO_SEL_TGT_CROP will
+ * reset @ref VIDEO_SEL_TGT_COMPOSE to the same size.
+ *
+ * @param dev Pointer to the device structure for the driver instance.
+ * @param sel Pointer to a video selection structure
+ *
+ * @retval 0 Is successful.
+ * @retval -EINVAL If parameters are invalid.
+ * @retval -ENOTSUP If format is not supported.
+ * @retval -EIO General input / output error.
+ */
+static inline int video_set_selection(const struct device *dev, struct video_selection *sel)
+{
+	const struct video_driver_api *api;
+
+	__ASSERT_NO_MSG(dev != NULL);
+	__ASSERT_NO_MSG(sel != NULL);
+
+	api = (const struct video_driver_api *)dev->api;
+	if (api->set_selection == NULL) {
+		return -ENOSYS;
+	}
+
+	return api->set_selection(dev, sel);
+}
+
+/**
+ * @brief Get video selection (crop/compose).
+ *
+ * Retrieve the current settings related to the crop and compose of the video device.
+ * This can also be used to read the native size of the input stream of the video
+ * device.
+ * This function can be used to read crop / compose capabilities of the device prior
+ * to performing configuration via the @ref video_set_selection api.
+ *
+ * @param dev Pointer to the device structure for the driver instance.
+ * @param sel Pointer to a video selection structure, @c type and @c target set by the caller
+ *
+ * @retval 0 Is successful.
+ * @retval -EINVAL If parameters are invalid.
+ * @retval -ENOTSUP If format is not supported.
+ * @retval -EIO General input / output error.
+ */
+static inline int video_get_selection(const struct device *dev, struct video_selection *sel)
+{
+	const struct video_driver_api *api;
+
+	__ASSERT_NO_MSG(dev != NULL);
+	__ASSERT_NO_MSG(sel != NULL);
+
+	api = (const struct video_driver_api *)dev->api;
+	if (api->get_selection == NULL) {
+		return -ENOSYS;
+	}
+
+	return api->get_selection(dev, sel);
 }
 
 /**
@@ -771,6 +935,9 @@ int video_format_caps_index(const struct video_format_cap *fmts, const struct vi
  */
 static inline uint64_t video_frmival_nsec(const struct video_frmival *frmival)
 {
+	__ASSERT_NO_MSG(frmival != NULL);
+	__ASSERT_NO_MSG(frmival->denominator != 0);
+
 	return (uint64_t)NSEC_PER_SEC * frmival->numerator / frmival->denominator;
 }
 
@@ -803,6 +970,23 @@ void video_closest_frmival_stepwise(const struct video_frmival_stepwise *stepwis
  * @param match Frame interval enumerator with the query, and loaded with the result.
  */
 void video_closest_frmival(const struct device *dev, struct video_frmival_enum *match);
+
+/**
+ * @brief Return the link-frequency advertised by a device
+ *
+ * Device exposing a CSI link should advertise at least one of the following two controls:
+ *   - @ref VIDEO_CID_LINK_FREQ
+ *   - @ref VIDEO_CID_PIXEL_RATE
+ *
+ * At first the helper will try read the @ref VIDEO_CID_LINK_FREQ and if not available will
+ * approximate the link-frequency from the @ref VIDEO_CID_PIXEL_RATE value, taking into
+ * consideration the bits per pixel of the format and the number of lanes.
+ *
+ * @param dev Video device to query.
+ * @param bpp Amount of bits per pixel of the pixel format produced by the device
+ * @param lane_nb Number of CSI-2 lanes used
+ */
+int64_t video_get_csi_link_freq(const struct device *dev, uint8_t bpp, uint8_t lane_nb);
 
 /**
  * @defgroup video_pixel_formats Video pixel formats
@@ -1187,6 +1371,46 @@ void video_closest_frmival(const struct device *dev, struct video_frmival_enum *
 #define VIDEO_PIX_FMT_Y14P VIDEO_FOURCC('Y', '1', '4', 'P')
 
 /**
+ * Little endian, with the 6 most significant bits set to Zero.
+ * @code{.unparsed}
+ *   0                   1                   2                   3
+ * | yyyyyyyy 000000Yy | yyyyyyyy 000000Yy | yyyyyyyy 000000Yy | yyyyyyyy 000000Yy | ...
+ * | yyyyyyyy 000000Yy | yyyyyyyy 000000Yy | yyyyyyyy 000000Yy | yyyyyyyy 000000Yy | ...
+ * @endcode
+ */
+#define VIDEO_PIX_FMT_Y10 VIDEO_FOURCC('Y', '1', '0', ' ')
+
+/**
+ * Little endian, with the 4 most significant bits set to Zero.
+ * @code{.unparsed}
+ *   0                   1                   2                   3
+ * | yyyyyyyy 0000Yyyy | yyyyyyyy 0000Yyyy | yyyyyyyy 0000Yyyy | yyyyyyyy 0000Yyyy | ...
+ * | yyyyyyyy 0000Yyyy | yyyyyyyy 0000Yyyy | yyyyyyyy 0000Yyyy | yyyyyyyy 0000Yyyy | ...
+ * @endcode
+ */
+#define VIDEO_PIX_FMT_Y12 VIDEO_FOURCC('Y', '1', '2', ' ')
+
+/**
+ * Little endian, with the 2 most significant bits set to Zero.
+ * @code{.unparsed}
+ *   0                   1                   2                   3
+ * | yyyyyyyy 00Yyyyyy | yyyyyyyy 00Yyyyyy | yyyyyyyy 00Yyyyyy | yyyyyyyy 00Yyyyyy | ...
+ * | yyyyyyyy 00Yyyyyy | yyyyyyyy 00Yyyyyy | yyyyyyyy 00Yyyyyy | yyyyyyyy 00Yyyyyy | ...
+ * @endcode
+ */
+#define VIDEO_PIX_FMT_Y14 VIDEO_FOURCC('Y', '1', '4', ' ')
+
+/**
+ * Little endian.
+ * @code{.unparsed}
+ *   0                   1                   2                   3
+ * | yyyyyyyy Yyyyyyyy | yyyyyyyy Yyyyyyyy | yyyyyyyy Yyyyyyyy | yyyyyyyy Yyyyyyyy | ...
+ * | yyyyyyyy Yyyyyyyy | yyyyyyyy Yyyyyyyy | yyyyyyyy Yyyyyyyy | yyyyyyyy Yyyyyyyy | ...
+ * @endcode
+ */
+#define VIDEO_PIX_FMT_Y16 VIDEO_FOURCC('Y', '1', '6', ' ')
+
+/**
  * @}
  */
 
@@ -1401,6 +1625,10 @@ static inline unsigned int video_bits_per_pixel(uint32_t pixfmt)
 	case VIDEO_PIX_FMT_SGBRG16:
 	case VIDEO_PIX_FMT_SGRBG16:
 	case VIDEO_PIX_FMT_SRGGB16:
+	case VIDEO_PIX_FMT_Y10:
+	case VIDEO_PIX_FMT_Y12:
+	case VIDEO_PIX_FMT_Y14:
+	case VIDEO_PIX_FMT_Y16:
 		return 16;
 	case VIDEO_PIX_FMT_BGR24:
 	case VIDEO_PIX_FMT_RGB24:
@@ -1417,6 +1645,39 @@ static inline unsigned int video_bits_per_pixel(uint32_t pixfmt)
 		return 0;
 	}
 }
+
+/**
+ * @}
+ */
+
+/**
+ * @name MIPI CSI2 Data-types
+ *
+ * @{
+ */
+#define VIDEO_MIPI_CSI2_DT_NULL	0x10
+#define VIDEO_MIPI_CSI2_DT_BLANKING	0x11
+#define VIDEO_MIPI_CSI2_DT_EMBEDDED_8	0x12
+#define VIDEO_MIPI_CSI2_DT_YUV420_8	0x18
+#define VIDEO_MIPI_CSI2_DT_YUV420_10	0x19
+#define VIDEO_MIPI_CSI2_DT_YUV420_CSPS_8	0x1c
+#define VIDEO_MIPI_CSI2_DT_YUV420_CSPS_10	0x1d
+#define VIDEO_MIPI_CSI2_DT_YUV422_8	0x1e
+#define VIDEO_MIPI_CSI2_DT_YUV422_10	0x1f
+#define VIDEO_MIPI_CSI2_DT_RGB444	0x20
+#define VIDEO_MIPI_CSI2_DT_RGB555	0x21
+#define VIDEO_MIPI_CSI2_DT_RGB565	0x22
+#define VIDEO_MIPI_CSI2_DT_RGB666	0x23
+#define VIDEO_MIPI_CSI2_DT_RGB888	0x24
+#define VIDEO_MIPI_CSI2_DT_RAW6		0x28
+#define VIDEO_MIPI_CSI2_DT_RAW7		0x29
+#define VIDEO_MIPI_CSI2_DT_RAW8		0x2a
+#define VIDEO_MIPI_CSI2_DT_RAW10	0x2b
+#define VIDEO_MIPI_CSI2_DT_RAW12	0x2c
+#define VIDEO_MIPI_CSI2_DT_RAW14	0x2d
+
+/* User-defined Data-Type range from 0x30 to 0x37 */
+#define VIDEO_MIPI_CSI2_DT_USER(n)	(0x30 + (n))
 
 /**
  * @}

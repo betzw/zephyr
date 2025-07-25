@@ -10,5 +10,11 @@ supported:
   - serial
   - gpio
   - trng
+  - watchdog
+  - dma
+  - counter
+  - pwm
+  - rtc_counter
+  - spi
 ram: 256
 flash: 960
