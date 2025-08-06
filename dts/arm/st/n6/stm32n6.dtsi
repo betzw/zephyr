@@ -244,11 +244,11 @@
 			};
 		};
 
-		ramcfg_sram3_axi: ramcfg@42023100 {
+		ramcfg_sram3_axi: ramcfg@52023100 {
 			compatible = "st,stm32n6-ramcfg";
 			#address-cells = <1>;
 			#size-cells = <1>;
-			reg = <0x42023100 0x80>;
+			reg = <0x52023100 0x80>;
 			clocks = <&rcc STM32_CLOCK(MEM, 0)>, <&rcc STM32_CLOCK(AHB2, 12)>;
 			clock-names = "axisram", "ramcfg";
 
@@ -259,11 +259,11 @@
 			};
 		};
 
-		ramcfg_sram4_axi: ramcfg@42023180 {
+		ramcfg_sram4_axi: ramcfg@52023180 {
 			compatible = "st,stm32n6-ramcfg";
 			#address-cells = <1>;
 			#size-cells = <1>;
-			reg = <0x42023180 0x80>;
+			reg = <0x52023180 0x80>;
 			clocks = <&rcc STM32_CLOCK(MEM, 1)>, <&rcc STM32_CLOCK(AHB2, 12)>;
 			clock-names = "axisram", "ramcfg";
 
@@ -274,11 +274,11 @@
 			};
 		};
 
-		ramcfg_sram5_axi: ramcfg@42023200 {
+		ramcfg_sram5_axi: ramcfg@52023200 {
 			compatible = "st,stm32n6-ramcfg";
 			#address-cells = <1>;
 			#size-cells = <1>;
-			reg = <0x42023200 0x80>;
+			reg = <0x52023200 0x80>;
 			clocks = <&rcc STM32_CLOCK(MEM, 2)>, <&rcc STM32_CLOCK(AHB2, 12)>;
 			clock-names = "axisram", "ramcfg";
 
@@ -289,11 +289,11 @@
 			};
 		};
 
-		ramcfg_sram6_axi: ramcfg@42023280 {
+		ramcfg_sram6_axi: ramcfg@52023280 {
 			compatible = "st,stm32n6-ramcfg";
 			#address-cells = <1>;
 			#size-cells = <1>;
-			reg = <0x42023280 0x80>;
+			reg = <0x52023280 0x80>;
 			clocks = <&rcc STM32_CLOCK(MEM, 3)>, <&rcc STM32_CLOCK(AHB2, 12)>;
 			clock-names = "axisram", "ramcfg";
 
