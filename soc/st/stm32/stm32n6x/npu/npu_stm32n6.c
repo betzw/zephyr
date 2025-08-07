@@ -8,12 +8,49 @@
 
 #include <errno.h>
 
+#include <zephyr/kernel.h>
 #include <zephyr/device.h>
 #include <zephyr/drivers/reset.h>
 #include <zephyr/init.h>
 #include <soc.h>
 
 #include <zephyr/drivers/clock_control/stm32_clock_control.h>
+
+/* Enable Cache AXI helper functions */
+static inline void _npu_cache_axi_invalidate(void)
+{
+	uint32_t npu_cache_base = CACHEAXI_BASE_S;
+
+	*((__IO uint32_t *)npu_cache_base) |= 0x2;
+	while ((*((__IO uint32_t *)(npu_cache_base + 0x4)) & (1 << 1)) != (1 << 1))
+		;
+}
+
+static void _npu_cache_axi_enable(void)
+{
+	LL_AHB5_GRP1_ForceReset(LL_AHB5_GRP1_PERIPH_CACHEAXI);
+	LL_AHB5_GRP1_ReleaseReset(LL_AHB5_GRP1_PERIPH_CACHEAXI);
+
+	/* Disable cache */
+	*((__IO uint32_t *)(CACHEAXI_BASE_S)) = 0x0;
+
+	k_busy_wait(5 * 1000); // 5ms delay
+
+	/* Enable cache */
+	*((__IO uint32_t *)(CACHEAXI_BASE_S)) = 0x1;
+
+	/* Invalidate cache */
+	_npu_cache_axi_invalidate();
+
+	/* Enable cache counters */
+	*((__IO uint32_t *)(CACHEAXI_BASE_S)) |= 0x33330000;
+
+	/* Reset cache counters */
+	*((__IO uint32_t *)(CACHEAXI_BASE_S)) |= 0xcccc0000;
+
+	/* Enable cache error interrupt */
+	*((__IO uint32_t *)(CACHEAXI_BASE_S + 8)) = (1 << 2);
+}
 
 /* Read-only driver configuration */
 struct npu_stm32_cfg {
@@ -43,7 +80,7 @@ static int npu_stm32_init(const struct device *dev)
 		return -ENODEV;
 	}
 
-	if (clock_control_on(clk, (clock_control_subsys_t) &cfg->pclken) != 0) {
+	if (clock_control_on(clk, (clock_control_subsys_t)&cfg->pclken) != 0) {
 		return -EIO;
 	}
 
@@ -54,7 +91,21 @@ static int npu_stm32_init(const struct device *dev)
 	/* Reset timer to default state using RCC */
 	(void)reset_line_toggle_dt(&cfg->reset);
 
+	/* Configure NPU RISAF */
 	npu_risaf_config();
+
+	/* Enable Cache AXI clocks */
+	LL_AHB5_GRP1_EnableClock(LL_AHB5_GRP1_PERIPH_CACHEAXI);
+	RCC->MEMENR |= RCC_MEMENR_CACHEAXIRAMEN;
+	RCC->AHB5LPENR |= 0x40000000; // enable Cache AXI in low power mode
+
+	/* Data Synchronization Barrier */
+	__DSB();
+
+	/* Enable caches (as this is expected to be the situation when `main()` is called) */
+	SCB_EnableICache();
+	SCB_EnableDCache();
+	_npu_cache_axi_enable();
 
 	return 0;
 }
@@ -62,9 +113,9 @@ static int npu_stm32_init(const struct device *dev)
 
 static const struct npu_stm32_cfg npu_stm32_cfg = {
 	.pclken = {
-		.enr = DT_CLOCKS_CELL(DT_NODELABEL(npu), bits),
-		.bus = DT_CLOCKS_CELL(DT_NODELABEL(npu), bus),
-	},
+			.enr = DT_CLOCKS_CELL(DT_NODELABEL(npu), bits),
+			.bus = DT_CLOCKS_CELL(DT_NODELABEL(npu), bus),
+		},
 	.reset = RESET_DT_SPEC_GET(DT_NODELABEL(npu)),
 };
 
