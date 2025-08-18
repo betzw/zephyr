@@ -402,6 +402,7 @@ static void usbd_cdc_ecm_disable(struct usbd_class_data *const c_data)
 	const struct device *dev = usbd_class_get_private(c_data);
 	struct cdc_ecm_eth_data *data = dev->data;
 
+	atomic_clear_bit(&data->state, CDC_ECM_DATA_IFACE_ENABLED);
 	atomic_clear_bit(&data->state, CDC_ECM_CLASS_SUSPENDED);
 	LOG_INF("Disabled %s", c_data->name);
 }
@@ -492,6 +493,8 @@ static int cdc_ecm_send(const struct device *dev, struct net_pkt *const pkt)
 	struct usbd_class_data *c_data = data->c_data;
 	size_t len = net_pkt_get_len(pkt);
 	struct net_buf *buf;
+	uint8_t ep;
+	int ret;
 
 	if (len > NET_ETH_MAX_FRAME_SIZE) {
 		LOG_WRN("Trying to send too large packet, drop");
@@ -504,7 +507,8 @@ static int cdc_ecm_send(const struct device *dev, struct net_pkt *const pkt)
 		return -EACCES;
 	}
 
-	buf = cdc_ecm_buf_alloc(cdc_ecm_get_bulk_in(c_data));
+	ep = cdc_ecm_get_bulk_in(c_data);
+	buf = cdc_ecm_buf_alloc(ep);
 	if (buf == NULL) {
 		LOG_ERR("Failed to allocate buffer");
 		return -ENOMEM;
@@ -523,7 +527,13 @@ static int cdc_ecm_send(const struct device *dev, struct net_pkt *const pkt)
 		udc_ep_buf_set_zlp(buf);
 	}
 
-	usbd_ep_enqueue(c_data, buf);
+	ret = usbd_ep_enqueue(c_data, buf);
+	if (ret) {
+		LOG_ERR("Failed to enqueue net_buf for 0x%02x", ep);
+		net_buf_unref(buf);
+		return ret;
+	}
+
 	k_sem_take(&data->sync_sem, K_FOREVER);
 	net_buf_unref(buf);
 

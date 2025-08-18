@@ -194,6 +194,11 @@ SECTIONS {
     KEEP (*(.Level4InterruptVector.text))
     _Level4InterruptVector_text_end = .;
   } >vector_int4_text
+  .DebugExceptionVector.text : {
+    _DebugExceptionVector_text_start = .;
+    KEEP (*(.DebugExceptionVector.text))
+    _DebugExceptionVector_text_end = .;
+  } >vector_int4_text
   .NMIExceptionVector.text : {
     _NMIExceptionVector_text_start = .;
     KEEP (*(.NMIExceptionVector.text))
@@ -499,6 +504,9 @@ SECTIONS {
   /* Heap start and end markers. Used to reserve system heap memory. */
   .heap_mem SEGSTART_UNCACHED (NOLOAD) :
   {
+    _shared_heap_start = .;
+    *(.shared_heap_mem)
+    _shared_heap_end = .;
     _heap_start = .;
     *(.heap_mem)
   } >ucram

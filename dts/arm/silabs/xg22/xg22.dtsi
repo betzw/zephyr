@@ -6,11 +6,11 @@
  */
 
 #include <arm/armv8-m.dtsi>
-#include <dt-bindings/clock/silabs/xg22-clock.h>
-#include <dt-bindings/dma/silabs/xg22-dma.h>
-#include <dt-bindings/gpio/gpio.h>
-#include <dt-bindings/i2c/i2c.h>
-#include <dt-bindings/adc/adc.h>
+#include <zephyr/dt-bindings/adc/adc.h>
+#include <zephyr/dt-bindings/clock/silabs/xg22-clock.h>
+#include <zephyr/dt-bindings/dma/silabs/xg22-dma.h>
+#include <zephyr/dt-bindings/gpio/gpio.h>
+#include <zephyr/dt-bindings/i2c/i2c.h>
 #include <freq.h>
 
 / {
@@ -400,7 +400,7 @@
 		};
 
 		gpio: gpio@5003c000 {
-			compatible = "silabs,gecko-gpio";
+			compatible = "silabs,gpio";
 			reg = <0x5003C000 0x440>;
 			ranges;
 			interrupts = <25 2>, <26 2>;
@@ -410,7 +410,7 @@
 			#size-cells = <1>;
 
 			gpioa: gpio@5003c000 {
-				compatible = "silabs,gecko-gpio-port";
+				compatible = "silabs,gpio-port";
 				reg = <0x5003C000 0x30>;
 				gpio-controller;
 				#gpio-cells = <2>;
@@ -418,7 +418,7 @@
 			};
 
 			gpiob: gpio@5003c030 {
-				compatible = "silabs,gecko-gpio-port";
+				compatible = "silabs,gpio-port";
 				reg = <0x5003C030 0x30>;
 				gpio-controller;
 				#gpio-cells = <2>;
@@ -426,7 +426,7 @@
 			};
 
 			gpioc: gpio@5003c060 {
-				compatible = "silabs,gecko-gpio-port";
+				compatible = "silabs,gpio-port";
 				reg = <0x5003C060 0x30>;
 				gpio-controller;
 				#gpio-cells = <2>;
@@ -434,7 +434,7 @@
 			};
 
 			gpiod: gpio@5003c090 {
-				compatible = "silabs,gecko-gpio-port";
+				compatible = "silabs,gpio-port";
 				reg = <0x5003C090 0x30>;
 				gpio-controller;
 				#gpio-cells = <2>;

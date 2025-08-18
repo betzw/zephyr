@@ -1937,11 +1937,11 @@ static int unicast_client_ep_config(struct bt_bap_ep *ep, struct net_buf_simple 
 
 	req = net_buf_simple_add(buf, sizeof(*req));
 	req->ase = ep->status.id;
-	req->latency = 0x02; /* TODO: Select target latency based on additional input? */
-	req->phy = 0x02;     /* TODO: Select target PHY based on additional input? */
+	req->latency = codec_cfg->target_latency;
+	req->phy = codec_cfg->target_phy;
 	req->codec.id = codec_cfg->id;
-	req->codec.cid = codec_cfg->cid;
-	req->codec.vid = codec_cfg->vid;
+	req->codec.cid = sys_cpu_to_le16(codec_cfg->cid);
+	req->codec.vid = sys_cpu_to_le16(codec_cfg->vid);
 
 	req->cc_len = codec_cfg->data_len;
 	net_buf_simple_add_mem(buf, codec_cfg->data, codec_cfg->data_len);
@@ -1957,7 +1957,9 @@ int bt_bap_unicast_client_ep_qos(struct bt_bap_ep *ep, struct net_buf_simple *bu
 
 	LOG_DBG("ep %p buf %p qos %p", ep, buf, qos);
 
-	if (!ep) {
+	if (ep == NULL || ep->iso == NULL || ep->iso->chan.iso == NULL) {
+		LOG_DBG("Invalid endpoint %p (%p (%p))", ep, ep == NULL ? NULL : ep->iso,
+			(ep == NULL || ep->iso == NULL) ? NULL : ep->iso->chan.iso);
 		return -EINVAL;
 	}
 
@@ -4467,14 +4469,13 @@ static void unicast_client_disconnected(struct bt_conn *conn, uint8_t reason)
 	unicast_client_ep_reset(conn, reason);
 }
 
-static struct bt_conn_cb conn_cbs = {
+BT_CONN_CB_DEFINE(conn_cbs) = {
 	.disconnected = unicast_client_disconnected,
 };
 
 int bt_bap_unicast_client_discover(struct bt_conn *conn, enum bt_audio_dir dir)
 {
 	struct unicast_client *client;
-	static bool conn_cb_registered;
 	uint8_t role;
 	int err;
 
@@ -4506,11 +4507,6 @@ int bt_bap_unicast_client_discover(struct bt_conn *conn, enum bt_audio_dir dir)
 	client->disc_params.type = BT_GATT_DISCOVER_CHARACTERISTIC;
 	client->disc_params.start_handle = BT_ATT_FIRST_ATTRIBUTE_HANDLE;
 	client->disc_params.end_handle = BT_ATT_LAST_ATTRIBUTE_HANDLE;
-
-	if (!conn_cb_registered) {
-		bt_conn_cb_register(&conn_cbs);
-		conn_cb_registered = true;
-	}
 
 	err = bt_gatt_discover(conn, &client->disc_params);
 	if (err != 0) {

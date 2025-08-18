@@ -137,6 +137,12 @@
 	soc {
 		compatible = "ambiq,apollo510", "ambiq,apollo5x", "simple-bus";
 
+		trng: trng@40014aa0 {
+			compatible = "ambiq,puf-trng";
+			reg = <0x40014aa0 0x4>;
+			status = "disabled";
+		};
+
 		stimer0: stimer@STIMER_BASE_NAME {
 			compatible = "ambiq,stimer";
 			reg = <STIMER_REG_BASE STIMER_REG_SIZE>;
@@ -690,6 +696,28 @@
 			internal-vref-mv = <1190>;
 			status = "disabled";
 			#io-channel-cells = <1>;
+		};
+
+		sdio0: sdio@SDIO0_BASE_NAME {
+			compatible = "ambiq,sdio";
+			reg = <SDIO0_REG_BASE SDIO0_REG_SIZE>;
+			interrupts = <26 0>;
+			max-bus-freq = <96000000>;
+			min-bus-freq = <375000>;
+			power-delay-ms = <50>;
+			status = "disabled";
+			zephyr,pm-device-runtime-auto;
+		};
+
+		sdio1: sdio@SDIO1_BASE_NAME {
+			compatible = "ambiq,sdio";
+			reg = <SDIO1_REG_BASE SDIO1_REG_SIZE>;
+			interrupts = <84 0>;
+			max-bus-freq = <96000000>;
+			min-bus-freq = <375000>;
+			power-delay-ms = <50>;
+			status = "disabled";
+			zephyr,pm-device-runtime-auto;
 		};
 
 		pinctrl: pin-controller@GPIO_BASE_NAME {
