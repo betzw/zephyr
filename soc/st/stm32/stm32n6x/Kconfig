@@ -27,4 +27,6 @@ config STM32N6_BOOT_SERIAL
 config STM32N6_NPU
 	bool "Neural-ART accelerator (NPU)"
 	select USE_STM32_HAL_RIF
-	select USE_STM32_HAL_CACHEAXI
+	select RESET
+	default y
+	depends on DT_HAS_ST_STM32_NPU_ENABLED

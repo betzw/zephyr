@@ -221,9 +221,6 @@ ARM arch:
   maintainers:
     - wearyzen
   collaborators:
-    - microbuilder
-    - carlocaione
-    - galak
     - MaureenHelm
     - stephanosio
     - bbolen
@@ -241,9 +238,7 @@ ARM arch:
     - arch.arm
 
 ARM64 arch:
-  status: maintained
-  maintainers:
-    - carlocaione
+  status: odd fixes
   collaborators:
     - npitre
     - povergoing
@@ -597,7 +592,7 @@ Bluetooth Host:
     - tests/bsim/bluetooth/hci_uart/
     - tests/bsim/bluetooth/ll/
     - tests/bsim/bluetooth/mesh/
-    - tests/bsim/bluetooth/tester/src/audio/
+    - tests/bsim/bluetooth/tester/
   labels:
     - "area: Bluetooth Host"
     - "area: Bluetooth"
@@ -662,6 +657,7 @@ Bluetooth Qualification:
     - doc/connectivity/bluetooth/autopts/
     - tests/bluetooth/qualification/
     - tests/bluetooth/tester/
+    - tests/bsim/bluetooth/tester/
   labels:
     - "area: Bluetooth Qualification"
     - "area: Bluetooth"
@@ -673,7 +669,6 @@ Board/SoC configuration:
   maintainers:
     - tejlmand
   collaborators:
-    - galak
     - nashif
     - nordicjm
     - "57300"
@@ -802,7 +797,6 @@ CMSIS-DSP integration:
   maintainers:
     - stephanosio
   collaborators:
-    - galak
     - XenuIsWatching
   files:
     - modules/cmsis-dsp/
@@ -832,8 +826,6 @@ CMSIS-NN integration:
 Cache:
   status: maintained
   maintainers:
-    - carlocaione
-  collaborators:
     - nashif
   files:
     - include/zephyr/drivers/cache.h
@@ -1048,7 +1040,6 @@ Devicetree:
     - mbolivar
   collaborators:
     - decsny
-    - galak
     - rruuaanng
   files-regex:
     - ^dts/bindings/.*zephyr.*
@@ -1546,7 +1537,7 @@ Documentation Infrastructure:
     - decsny
     - lmajewski
     - pdgendt
-    - clamattia
+    - ClaCodes
   files:
     - drivers/ethernet/
     - include/zephyr/dt-bindings/ethernet/
@@ -1581,6 +1572,18 @@ Documentation Infrastructure:
     - "area: FPGA"
   tests:
     - drivers.fpga
+
+"Drivers: Firmware":
+  status: maintained
+  maintainers:
+    - LaurentiuM1234
+  files:
+    - drivers/firmware/
+    - include/zephyr/drivers/firmware/
+    - dts/bindings/firmware/
+    - doc/hardware/arch/arm-scmi.rst
+  labels:
+    - "area: Firmware"
 
 "Drivers: Flash":
   status: maintained
@@ -1642,7 +1645,6 @@ Documentation Infrastructure:
     - include/zephyr/drivers/gnss/
     - include/zephyr/gnss/
     - dts/bindings/gnss/
-    - include/zephyr/dt-bindings/gnss/
     - tests/drivers/build_all/gnss/
     - tests/drivers/gnss/
     - tests/subsys/gnss/
@@ -1907,7 +1909,6 @@ Documentation Infrastructure:
   status: odd fixes
   files:
     - drivers/mipi_dsi/
-    - doc/hardware/peripherals/mipi_dsi.rst
     - include/zephyr/drivers/mipi_dsi.h
     - include/zephyr/drivers/mipi_dsi/
     - tests/drivers/mipi_dsi/
@@ -1939,9 +1940,7 @@ Documentation Infrastructure:
     - drivers.mspi
 
 "Drivers: Mbox":
-  status: maintained
-  maintainers:
-    - carlocaione
+  status: odd fixes
   collaborators:
     - wearyzen
     - ithinuel
@@ -2020,9 +2019,7 @@ Documentation Infrastructure:
     - samples.drivers.peci
 
 "Drivers: PM CPU ops":
-  status: maintained
-  maintainers:
-    - carlocaione
+  status: odd fixes
   collaborators:
     - gdengi
     - nbalabak
@@ -2327,9 +2324,7 @@ Documentation Infrastructure:
     - drivers.stepper
 
 "Drivers: Syscon":
-  status: maintained
-  maintainers:
-    - carlocaione
+  status: odd fixes
   files:
     - include/zephyr/drivers/syscon.h
     - drivers/syscon/
@@ -2743,7 +2738,6 @@ IPC:
   maintainers:
     - doki-nordic
   collaborators:
-    - carlocaione
     - arnopo
   files:
     - include/zephyr/ipc/
@@ -3167,7 +3161,6 @@ MIPS arch:
 Memory Management:
   status: maintained
   maintainers:
-    - carlocaione
     - dcpleung
   files:
     - subsys/mem_mgmt/
@@ -3228,8 +3221,11 @@ Microchip SAM Platforms:
     - stephanosio
   files:
     - boards/atmel/
+    - boards/microchip/sam/
     - dts/arm/atmel/
+    - dts/arm/microchip/sam/
     - soc/atmel/
+    - soc/microchip/sam/
     - drivers/*/*sam*.c
     - dts/bindings/*/atmel,*
   labels:
@@ -3244,7 +3240,7 @@ Modbus:
     - include/zephyr/modbus/
     - tests/subsys/modbus/
     - subsys/modbus/
-    - doc/services/modbus/
+    - doc/connectivity/modbus/
   labels:
     - "area: modbus"
   tests:
@@ -3890,7 +3886,6 @@ Octavo Systems Platforms:
 Open AMP:
   status: maintained
   maintainers:
-    - carlocaione
     - iuliana-prodan
   collaborators:
     - uLipe
@@ -4026,7 +4021,6 @@ RISCV arch:
     - mgielda
     - katsuster
     - edersondisouza
-    - carlocaione
     - npitre
     - ycsin
     - VynDragon
@@ -4345,6 +4339,7 @@ Samples:
     - kartben
   collaborators:
     - nashif
+    - JarmouniA
   files:
     - samples/sample_definition_and_criteria.rst
     - samples/
@@ -4606,11 +4601,11 @@ TDK Sensors:
 TI K3 Platforms:
   status: maintained
   maintainers:
-    - vaishnavachath
+    - glneo
   collaborators:
     - gramsay0
     - dnltz
-    - glneo
+    - vaishnavachath
   files:
     - boards/ti/*am62*/
     - drivers/*/*davinci*
@@ -5115,7 +5110,6 @@ West:
   maintainers:
     - stephanosio
   collaborators:
-    - microbuilder
     - povergoing
   files:
     - modules/cmsis/
@@ -5314,6 +5308,7 @@ West:
     - jvasanth1
     - AzharMCHP
     - scottwcpg
+    - nandojve
   collaborators:
     - VenkatKotakonda
     - albertofloyd
@@ -5562,7 +5557,6 @@ West:
 "West project: libmetal":
   status: odd fixes
   collaborators:
-    - carlocaione
     - arnopo
   files:
     - modules/Kconfig.libmetal
@@ -5584,6 +5578,15 @@ West:
     - modules/littlefs/
   labels:
     - "area: Storage"
+
+"West project: lora-basics-modem":
+  status: maintained
+  maintainers:
+    - JordanYates
+  files:
+    - modules/lora-basics-modem/
+  labels:
+    - "area: LoRa"
 
 "West project: loramac-node":
   status: maintained
@@ -5711,7 +5714,6 @@ West:
 "West project: open-amp":
   status: odd fixes
   collaborators:
-    - carlocaione
     - uLipe
     - iuliana-prodan
   files:
@@ -5835,7 +5837,6 @@ West:
     - povergoing
     - sgrrzhf
   collaborators:
-    - carlocaione
     - wearyzen
     - ithinuel
   files:

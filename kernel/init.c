@@ -28,6 +28,7 @@
 #include <zephyr/platform/hooks.h>
 #include <ksched.h>
 #include <kthread.h>
+#include <ipi.h>
 #include <zephyr/sys/dlist.h>
 #include <kernel_internal.h>
 #include <zephyr/drivers/entropy.h>
@@ -248,9 +249,8 @@ void z_bss_zero(void)
 		       ((uintptr_t) &__gcov_bss_end - (uintptr_t) &__gcov_bss_start));
 #endif /* CONFIG_COVERAGE_GCOV */
 #ifdef CONFIG_NOCACHE_MEMORY
-z_early_memset(&_nocache_ram_start, 0,
-		   (uintptr_t) &_nocache_ram_end
-		   - (uintptr_t) &_nocache_ram_start);
+	z_early_memset(&_nocache_ram_start, 0,
+		       (uintptr_t)&_nocache_ram_end - (uintptr_t)&_nocache_ram_start);
 #endif
 }
 
@@ -313,13 +313,24 @@ static int do_device_init(const struct device *dev)
 
 	if (dev->ops.init != NULL) {
 		rc = dev->ops.init(dev);
-		/* Mark device initialized. If initialization
-		 * failed, record the error condition.
+		/* If initialization failed, record in dev->state->init_res
+		 * the POSITIVE value of the resulting errno
 		 */
 		if (rc != 0) {
+			/* device's init function should return:
+			 *   0 on success
+			 *   a negative value on failure (-errno)
+			 * errno value maps to an uint8_t range as of now.
+			 */
+			__ASSERT(rc >= -UINT8_MAX && rc < 0, "device %s init: invalid error (%d)",
+				 dev->name, rc);
+
 			if (rc < 0) {
 				rc = -rc;
 			}
+			/* handle error value overflow in production
+			 * this is likely a bug in the device's init function. Signals it
+			 */
 			if (rc > UINT8_MAX) {
 				rc = UINT8_MAX;
 			}
@@ -327,6 +338,7 @@ static int do_device_init(const struct device *dev)
 		}
 	}
 
+	/* device initialization has been invoked */
 	dev->state->initialized = true;
 
 	if (rc == 0) {
@@ -334,7 +346,10 @@ static int do_device_init(const struct device *dev)
 		(void)pm_device_runtime_auto_enable(dev);
 	}
 
-	return rc;
+	/* here, the value of rc is either 0 or +errno
+	 * flip the sign to return a negative value on failure as expected
+	 */
+	return -rc;
 }
 
 /**
@@ -656,6 +671,10 @@ void z_init_cpu(int id)
 				  _kernel.cpus[id].usage,
 				  sizeof(struct k_cycle_stats));
 #endif
+#endif
+
+#ifdef CONFIG_SCHED_IPI_SUPPORTED
+	sys_dlist_init(&_kernel.cpus[id].ipi_workq);
 #endif
 }
 

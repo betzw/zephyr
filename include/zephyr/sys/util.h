@@ -29,6 +29,8 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
+#include <sys/types.h>
+
 
 /** @brief Number of bits that make up a type */
 #define NUM_BITS(t) (sizeof(t) * BITS_PER_BYTE)
@@ -433,6 +435,22 @@ extern "C" {
 #define IN_RANGE(val, min, max) ((val) >= (min) && (val) <= (max))
 
 /**
+ * Find number of contiguous bits which are not set in the bit mask (32 bits).
+ *
+ * It is possible to return immediately when requested number of bits is found or
+ * iterate over whole mask and return the best fit (smallest from available options).
+ *
+ * @param[in] mask 32 bit mask.
+ * @param[in] num_bits Number of bits to find.
+ * @param[in] total_bits Total number of LSB bits that can be used in the mask.
+ * @param[in] first_match If true returns when first match is found, else returns the best fit.
+ *
+ * @retval -1 Contiguous bits not found.
+ * @retval non-negative Starting index of the bits group.
+ */
+int bitmask_find_gap(uint32_t mask, size_t num_bits, size_t total_bits, bool first_match);
+
+/**
  * @brief Is @p x a power of two?
  * @param x value to check
  * @return true if @p x is a power of two, false otherwise
@@ -687,6 +705,20 @@ char *utf8_trunc(char *utf8_str);
  * @return Pointer to the @p dst
  */
 char *utf8_lcpy(char *dst, const char *src, size_t n);
+
+/**
+ * @brief Counts the characters in a UTF-8 encoded string @p s
+ *
+ * Counts the number of UTF-8 characters (code points) in a null-terminated string.
+ * This function steps through each UTF-8 sequence by checking leading byte patterns.
+ * It does not fully validate UTF-8 correctness, only counts characters.
+ *
+ * @param s The input string
+ *
+ * @return Number of UTF-8 characters in @p s on success or (negative) error code
+ *  otherwise.
+ */
+ssize_t utf8_count_chars(const char *s);
 
 #define __z_log2d(x) (32 - __builtin_clz(x) - 1)
 #define __z_log2q(x) (64 - __builtin_clzll(x) - 1)
