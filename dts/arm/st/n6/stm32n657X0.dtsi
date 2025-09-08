@@ -19,28 +19,28 @@
 	};
 
 	soc {
-		ramcfg@52023100 {
+		ramcfg@42023100 {
 			axisram3: memory@34200000 {
 				reg = <0x34200000 DT_SIZE_K(448)>;
 				status = "disabled";
 			};
 		};
 
-		ramcfg@52023180 {
+		ramcfg@42023180 {
 			axisram4: memory@34270000 {
 				reg = <0x34270000 DT_SIZE_K(448)>;
 				status = "disabled";
 			};
 		};
 
-		ramcfg@52023200 {
+		ramcfg@42023200 {
 			axisram5: memory@342e0000 {
 				reg = <0x342e0000 DT_SIZE_K(448)>;
 				status = "disabled";
 			};
 		};
 
-		ramcfg@52023280 {
+		ramcfg@42023280 {
 			axisram6: memory@34350000 {
 				reg = <0x34350000 DT_SIZE_K(448)>;
 				status = "disabled";
