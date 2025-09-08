@@ -33,7 +33,7 @@ static void _npu_cache_axi_enable(void)
 
 	/* Disable cache */
 	*((__IO uint32_t *)(CACHEAXI_BASE_S)) = 0x0;
-
+ 
 	k_busy_wait(5 * 1000); // 5ms delay
 
 	/* Enable cache */
@@ -103,8 +103,6 @@ static int npu_stm32_init(const struct device *dev)
 	__DSB();
 
 	/* Enable caches (as this is expected to be the situation when `main()` is called) */
-	SCB_EnableICache();
-	SCB_EnableDCache();
 	_npu_cache_axi_enable();
 
 	return 0;
