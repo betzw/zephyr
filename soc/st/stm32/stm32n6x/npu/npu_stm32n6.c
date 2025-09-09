@@ -16,6 +16,7 @@
 
 #include <zephyr/drivers/clock_control/stm32_clock_control.h>
 
+#ifdef CONFIG_STM32N6_ENABLE_NPU_CACHE
 /* Enable Cache AXI helper functions */
 static inline void _npu_cache_axi_invalidate(void)
 {
@@ -51,6 +52,7 @@ static void _npu_cache_axi_enable(void)
 	/* Enable cache error interrupt */
 	*((__IO uint32_t *)(CACHEAXI_BASE_S + 8)) = (1 << 2);
 }
+#endif /* CONFIG_STM32N6_ENABLE_NPU_CACHE */
 
 /* Read-only driver configuration */
 struct npu_stm32_cfg {
@@ -103,7 +105,9 @@ static int npu_stm32_init(const struct device *dev)
 	__DSB();
 
 	/* Enable caches (as this is expected to be the situation when `main()` is called) */
+#ifdef CONFIG_STM32N6_ENABLE_NPU_CACHE
 	_npu_cache_axi_enable();
+#endif /* CONFIG_STM32N6_ENABLE_NPU_CACHE */
 
 	return 0;
 }

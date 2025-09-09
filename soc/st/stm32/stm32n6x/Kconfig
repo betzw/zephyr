@@ -30,3 +30,8 @@ config STM32N6_NPU
 	select RESET
 	default y
 	depends on DT_HAS_ST_STM32_NPU_ENABLED
+
+config STM32N6_ENABLE_NPU_CACHE
+	bool "Enable NPU's cache"
+	default y
+	depends on STM32N6_NPU
