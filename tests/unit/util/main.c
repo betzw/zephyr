@@ -1,13 +1,20 @@
 /*
  * Copyright (c) 2019 Oticon A/S
+ * Copyright (c) 2025 Nordic Semiconductor ASA
  *
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <zephyr/ztest.h>
-#include <zephyr/sys/util.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+
+#include <zephyr/ztest.h>
+#include <zephyr/sys/util.h>
+#include <zephyr/sys/util_utf8.h>
+#include <zephyr/ztest.h>
+#include <zephyr/ztest_assert.h>
+#include <zephyr/ztest_test.h>
 
 ZTEST(util, test_u8_to_dec) {
 	char text[4];
@@ -258,6 +265,44 @@ ZTEST(util, test_z_max_z_min_z_clamp) {
 		      "Unexpected macro result");
 	/* Z_CLAMP should have call inc_func only once */
 	zassert_equal(inc_func(false), 8, "Unexpected return value");
+}
+
+ZTEST(util, test_max_from_list_macro) {
+	/* Test with one argument */
+	zassert_equal(MAX_FROM_LIST(10), 10, "Should return the single value.");
+
+	/* Test with two arguments */
+	zassert_equal(MAX_FROM_LIST(10, 20), 20, "Should return 20.");
+	zassert_equal(MAX_FROM_LIST(30, 15), 30, "Should return 30.");
+
+	/* Test with three arguments */
+	zassert_equal(MAX_FROM_LIST(10, 5, 20), 20, "Should return 20.");
+	zassert_equal(MAX_FROM_LIST(30, 15, 25), 30, "Should return 30.");
+	zassert_equal(MAX_FROM_LIST(5, 40, 35), 40, "Should return 40.");
+
+	/* Test with five arguments */
+	zassert_equal(MAX_FROM_LIST(10, 50, 20, 5, 30), 50, "Should return 50.");
+
+	/* Test with seven arguments */
+	zassert_equal(MAX_FROM_LIST(10, 50, 20, 5, 30, 45, 25), 50, "Should return 50.");
+
+	/* Test with eight arguments */
+	zassert_equal(MAX_FROM_LIST(1, 2, 3, 4, 5, 6, 7, 8), 8, "Should return 8.");
+	zassert_equal(MAX_FROM_LIST(10, 5, 20, 15, 30, 25, 35, 40), 40, "Should return 40.");
+
+	/* Test with nine arguments */
+	zassert_equal(MAX_FROM_LIST(1, 2, 3, 4, 5, 6, 7, 8, 9), 9, "Should return 9.");
+	zassert_equal(MAX_FROM_LIST(10, 5, 20, 15, 30, 25, 35, 40, 45), 45, "Should return 45.");
+
+	/* Test with ten arguments */
+	zassert_equal(MAX_FROM_LIST(1, 2, 3, 4, 5, 6, 7, 8, 9, 10), 10, "Should return 10.");
+	zassert_equal(MAX_FROM_LIST(10, 9, 8, 7, 6, 5, 4, 3, 2, 1), 10, "Should return 10.");
+	zassert_equal(MAX_FROM_LIST(5, 15, 25, 35, 45, 55, 65, 75, 85, 95),
+		95, "Should return 95.");
+
+	/* Test with various values */
+	zassert_equal(MAX_FROM_LIST(25600, 12800, 9800), 25600, "Should return 25600.");
+	zassert_equal(MAX_FROM_LIST(9800, 25600, 12800), 25600, "Should return 25600.");
 }
 
 ZTEST(util, test_CLAMP) {
@@ -845,6 +890,26 @@ ZTEST(util, test_mem_xor_128)
 	zassert_mem_equal(expected_result, dst, 16);
 }
 
+ZTEST(util, test_sys_count_bits)
+{
+	uint8_t zero = 0U;
+	uint8_t u8 = 29U;
+	uint16_t u16 = 29999U;
+	uint32_t u32 = 2999999999U;
+	uint64_t u64 = 123456789012345ULL;
+	uint8_t u8_arr[] = {u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8,
+			    u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8, u8};
+
+	zassert_equal(sys_count_bits(&zero, sizeof(zero)), 0);
+	zassert_equal(sys_count_bits(&u8, sizeof(u8)), 4);
+	zassert_equal(sys_count_bits(&u16, sizeof(u16)), 10);
+	zassert_equal(sys_count_bits(&u32, sizeof(u32)), 20);
+	zassert_equal(sys_count_bits(&u64, sizeof(u64)), 23);
+
+	zassert_equal(sys_count_bits(u8_arr, sizeof(u8_arr)), 128);
+	zassert_equal(sys_count_bits(&u8_arr[1], sizeof(u8_arr) - sizeof(u8_arr[0])), 124);
+}
+
 ZTEST(util, test_CONCAT)
 {
 #define _CAT_PART1 1
@@ -1008,7 +1073,7 @@ ZTEST(util, test_utf8_lcpy_null_termination)
 ZTEST(util, test_utf8_count_chars_ASCII)
 {
 	const char *test_str = "I have 15 char.";
-	ssize_t count = utf8_count_chars(test_str);
+	int count = utf8_count_chars(test_str);
 
 	zassert_equal(count, 15, "Failed to count ASCII");
 }
@@ -1016,7 +1081,7 @@ ZTEST(util, test_utf8_count_chars_ASCII)
 ZTEST(util, test_utf8_count_chars_non_ASCII)
 {
 	const char *test_str = "Hello دنیا!🌍";
-	ssize_t count = utf8_count_chars(test_str);
+	int count = utf8_count_chars(test_str);
 
 	zassert_equal(count, 12, "Failed to count non-ASCII");
 }
@@ -1024,8 +1089,8 @@ ZTEST(util, test_utf8_count_chars_non_ASCII)
 ZTEST(util, test_utf8_count_chars_invalid_utf)
 {
 	const char test_str[] = { (char)0x80, 0x00 };
-	ssize_t count = utf8_count_chars(test_str);
-	ssize_t expected_result = -EINVAL;
+	int count = utf8_count_chars(test_str);
+	int expected_result = -EINVAL;
 
 	zassert_equal(count, expected_result, "Failed to detect invalid UTF");
 }

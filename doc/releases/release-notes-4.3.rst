@@ -48,12 +48,8 @@ https://docs.zephyrproject.org/latest/security/vulnerabilities.html
 API Changes
 ***********
 
-* RTIO
-
-  * :c:func:`rtio_is_spi`
-  * :c:func:`rtio_is_cspi`
-  * :c:func:`rtio_is_i3c`
-  * :c:func:`rtio_read_regs_async`
+..
+  Only removed, deprecated and new APIs, changes go in migration guide.
 
 Removed APIs and options
 ========================
@@ -66,6 +62,15 @@ Deprecated APIs and options
 ===========================
 
 * :dtcompatible:`maxim,ds3231` is deprecated in favor of :dtcompatible:`maxim,ds3231-rtc`.
+* Providing a third agument to :c:macro:`SPI_CONFIG_DT`, :c:macro:`SPI_CONFIG_DT_INST`,
+  :c:macro:`SPI_DT_SPEC_GET`, :c:macro:`SPI_DT_SPEC_INST_GET` is deprecated. Providing a
+  second argument to :c:macro:`SPI_CS_CONTROL_INIT` is deprecated. Use new DT properties
+  ``spi-cs-setup-delay-ns`` and ``spi-cs-hold-delay-ns`` to specify delay instead.
+
+* :c:enum:`bt_hci_bus` was deprecated as it was not used. :c:macro:`BT_DT_HCI_BUS_GET` should be
+  used instead.
+
+* :kconfig:option:`CONFIG_POSIX_READER_WRITER_LOCKS` is deprecated. Use :kconfig:option:`CONFIG_POSIX_RW_LOCKS` instead.
 
 New APIs and options
 ====================
@@ -165,9 +170,39 @@ New APIs and options
     * :c:macro:`LOG_HEXDUMP_INF_RATELIMIT_RATE` - Rate-limited info hexdump macro (explicit rate)
     * :c:macro:`LOG_HEXDUMP_DBG_RATELIMIT_RATE` - Rate-limited debug hexdump macro (explicit rate)
 
+* Management
+
+  * hawkBit
+
+    * :kconfig:option:`CONFIG_HAWKBIT_REBOOT_NONE`
+
+* Networking
+
+  * Sockets
+
+    * :c:func:`zsock_listen` now implements the ``backlog`` parameter support. The TCP server
+      socket will limit the number of pending incoming connections to that value.
+
+* Newlib
+
+  * :kconfig:option:`CONFIG_NEWLIB_LIBC_USE_POSIX_LIMITS_H`
+
+* Opamp
+
+  * Introduced opamp device driver APIs selected with :kconfig:option:`CONFIG_OPAMP`. It supports
+    initial configuration through Devicetree and runtime configuration through vendor specific APIs.
+  * Added support for NXP OPAMP :dtcompatible:`nxp,opamp`.
+  * Added support for NXP OPAMP_FAST :dtcompatible:`nxp,opamp_fast`.
+
 * Power management
 
    * :c:func:`pm_device_driver_deinit`
+   * :kconfig:option:`CONFIG_PM_DEVICE_RUNTIME_DEFAULT_ENABLE`
+   * :kconfig:option:`CONFIG_PM_S2RAM` has been refactored to be promptless. The application now
+     only needs to enable any "suspend-to-ram" power state in the devicetree.
+   * The :kconfig:option:`PM_S2RAM_CUSTOM_MARKING` has been renamed to
+     :kconfig:option:`HAS_PM_S2RAM_CUSTOM_MARKING` and refactored to be promptless. This option
+     is now selected by SoCs if they need it for their "suspend-to-ram" implementations.
 
 * Settings
 
@@ -182,6 +217,18 @@ New APIs and options
       * :kconfig:option:`CONFIG_SHELL_MQTT_CONNECT_TIMEOUT_MS`
       * :kconfig:option:`CONFIG_SHELL_MQTT_WORK_DELAY_MS`
       * :kconfig:option:`CONFIG_SHELL_MQTT_LISTEN_TIMEOUT_MS`
+
+* Storage
+
+    * :kconfig:option:`CONFIG_FILE_SYSTEM_SHELL_LS_SIZE`
+
+* Sys
+
+  * :c:func:`sys_count_bits`
+
+* Task Watchdog
+
+  * :kconfig:option:`CONFIG_TASK_WDT_DUMMY`
 
 .. zephyr-keep-sorted-stop
 
@@ -209,6 +256,14 @@ New Drivers
 
    * STM32 EXTI interrupt/event controller (:dtcompatible:`st,stm32-exti`) has a dedicated driver and API now, separate from STM32 GPIO Interrupt Control driver.
 
+* MFD
+   * IRQ support has been added for X-Power AXP2101 MFD device. It gets automatically
+     enabled as soon as device-tree property ``int-gpios`` is defined on the device node.
+
+   * Support for the power button found on the X-Power AXP2101 MFD is added and can be enabled
+     via :kconfig:option:`MFD_AXP2101_POWER_BUTTON`. This feature requires interrupt support to
+     be enabled.
+
 * RTC
 
    * STM32 RTC driver has been updated to use the new STM32 EXTI interrupt controller API
@@ -224,6 +279,8 @@ New Samples
   Same as above for boards and drivers, this will also be recomputed at the time of the release.
  Just link the sample, further details go in the sample documentation itself.
 
+* Added a new sample :zephyr:code-sample:`opamp_output_measure` showing how to use the opamp device driver.
+
 Libraries / Subsystems
 **********************
 
@@ -237,6 +294,10 @@ Libraries / Subsystems
     via :kconfig:option:`CONFIG_LOG_RATELIMIT`. When rate limiting is disabled, the behavior can be controlled
     via :kconfig:option:`CONFIG_LOG_RATELIMIT_FALLBACK` to either log all messages or drop them completely.
     For more details, see :ref:`logging_ratelimited`.
+
+* Secure storage
+
+  * The experimental status has been removed. (:github:`96483`)
 
 Other notable changes
 *********************

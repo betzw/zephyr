@@ -48,7 +48,7 @@ def workflow_delay(repo, pr):
         completed = set()
         for run in runs:
             print(f"{run.name}: {run.status} {run.conclusion} {run.html_url}")
-            if run.status == "completed" and run.conclusion == "success":
+            if run.status == "completed":
                 completed.add(run.name)
 
         if WAIT_FOR_WORKFLOWS.issubset(completed):
@@ -62,8 +62,8 @@ def workflow_delay(repo, pr):
 def main(argv):
     args = parse_args(argv)
 
-    token = os.environ.get('GITHUB_TOKEN', None)
-    gh = github.Github(token)
+    auth = github.Auth.Token(os.environ.get('GITHUB_TOKEN', None))
+    gh = github.Github(auth=auth)
 
     print_rate_limit(gh, args.org)
 

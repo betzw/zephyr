@@ -30,6 +30,11 @@ config USE_RA_FSP_I3C
 	help
 	  Enable RA FSP I3C driver
 
+config USE_RA_FSP_DMA
+	bool
+	help
+	  Enable RA FSP DMA driver
+
 config USE_RA_FSP_DTC
 	bool
 	help
@@ -159,6 +164,11 @@ config USE_RA_FSP_SDHI
 	help
 	  Enable RA FSP SDHI driver
 
+config USE_RA_FSP_CRC
+	bool
+	help
+	  Enable RA FSP CRC driver
+
 config USE_RA_FSP_DAC
 	bool
 	help
@@ -223,6 +233,16 @@ config USE_RA_FSP_QSPI_NOR_FLASH
 	help
 	  Enable RA FSP Quad-SPI driver
 
+config USE_RA_FSP_CEU
+	bool
+	help
+	  Enable RA FSP CEU driver
+
+config USE_RA_FSP_IPC
+	bool
+	help
+	  Enable RA FSP IPC driver
+
 endif # HAS_RENESAS_RA_FSP
 
 if HAS_RENESAS_RZ_FSP
@@ -241,6 +261,11 @@ config USE_RZ_FSP_SCIF_UART
 	bool
 	help
 	  Enable RZ FSP SCIF UART driver
+
+config USE_RZ_FSP_IIC_MASTER
+	bool
+	help
+	  Enable RZ FSP IIC MASTER driver
 
 config USE_RZ_FSP_RIIC_MASTER
 	bool
@@ -296,6 +321,11 @@ config USE_RZ_FSP_MTU
 	bool
 	help
 	  Enable RZ FSP MTU driver
+
+config USE_RZ_FSP_CMTW
+	bool
+	help
+	  Enable RZ FSP CMTW driver
 
 endif
 
