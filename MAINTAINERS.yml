@@ -457,6 +457,7 @@ Bluetooth Classic:
     - MarkWangChinese
     - gzh-terry
     - makeshi
+    - chengkai15
   files:
     - doc/connectivity/bluetooth/shell/classic/a2dp.rst
     - subsys/bluetooth/common/
@@ -847,6 +848,20 @@ CMSIS-NN integration:
   tests:
     - libraries.cmsis_nn
 
+CPU Frequency Scaling:
+  status: maintained
+  maintainers:
+    - peter-mitsis
+    - seankyer
+  files:
+    - include/zephyr/cpu_freq/
+    - include/zephyr/cpu_load/
+    - subsys/cpu_load/
+    - subsys/cpu_freq/
+    - dts/bindings/p_state/
+  labels:
+    - "area: CPU Frequency Scaling"
+
 CRC:
   status: maintained
   maintainers:
@@ -1221,6 +1236,7 @@ Documentation Infrastructure:
     - lyakh
     - lgirdwood
     - kv2019i
+    - TomasBarakNXP
   files:
     - drivers/audio/
     - include/zephyr/audio/
@@ -1786,6 +1802,8 @@ Documentation Infrastructure:
   status: maintained
   maintainers:
     - anangl
+  collaborators:
+    - TomasBarakNXP
   files:
     - doc/hardware/peripherals/audio/i2s.rst
     - drivers/i2s/
@@ -2892,6 +2910,19 @@ Input:
     - drivers.input
     - input
 
+Instrumentation Subsystem:
+  status: maintained
+  maintainers:
+    - fkokosinski
+    - tgorochowik
+  files:
+    - include/zephyr/instrumentation/
+    - samples/subsys/instrumentation/
+    - scripts/instrumentation/
+    - subsys/instrumentation/
+  labels:
+    - "area: Instrumentation"
+
 Intel Platforms (Agilex):
   status: maintained
   maintainers:
@@ -3322,6 +3353,7 @@ Microchip SAM Platforms:
   maintainers:
     - nandojve
   collaborators:
+    - ArunMCHP
     - pdgendt
     - stephanosio
   files:
@@ -3383,6 +3415,24 @@ NEORV32 platform:
     - "platform: NEORV32"
   tests:
     - boards.neorv32
+
+NVMEM:
+  status: maintained
+  maintainers:
+    - pdgendt
+  collaborators:
+    - henrikbrixandersen
+  files:
+    - doc/services/nvmem/
+    - dts/bindings/nvmem/
+    - include/zephyr/devicetree/nvmem.h
+    - include/zephyr/nvmem.h
+    - subsys/nvmem/
+    - tests/subsys/nvmem/
+  labels:
+    - "area: NVMEM"
+  tests:
+    - nvmem
 
 NXP Platform Drivers:
   status: maintained
@@ -3572,6 +3622,7 @@ NXP Platforms (Xtensa):
     - dbaluta
   collaborators:
     - iuliana-prodan
+    - TomasBarakNXP
   files:
     - soc/nxp/imx/*/adsp/
     - soc/nxp/imxrt/*/f1/
@@ -3587,6 +3638,8 @@ Native_sim and POSIX arch:
   status: maintained
   maintainers:
     - aescolar
+  collaborators:
+    - tpambor
   files:
     - arch/posix/
     - boards/native/common/
@@ -4063,7 +4116,8 @@ PMCI:
     - kehintel
   files:
     - subsys/pmci/
-    - samples/modules/pmci/
+    - samples/subsys/pmci/
+    - include/zephyr/pmci/
   labels:
     - "area: PMCI"
 
@@ -4332,6 +4386,7 @@ Renesas RZ Platforms:
     - binhnguyen2434
   collaborators:
     - nhutnguyenkc
+    - tiennguyenzg
   files:
     - boards/renesas/rz*/
     - drivers/*/*rzt2m*
@@ -5485,6 +5540,7 @@ West:
     - AzharMCHP
     - scottwcpg
     - nandojve
+    - NhMchp
   collaborators:
     - VenkatKotakonda
     - albertofloyd
@@ -5576,6 +5632,8 @@ West:
     - soburi
     - duynguyenxa
     - thaoluonguw
+    - binhnguyen2434
+    - nhutnguyenkc
   files: []
   labels:
     - "platform: Renesas"
