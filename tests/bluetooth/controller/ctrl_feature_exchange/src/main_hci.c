@@ -11,7 +11,6 @@
 #define ULL_LLCP_UNITTEST
 
 #include <zephyr/bluetooth/hci.h>
-#include <zephyr/sys/byteorder.h>
 #include <zephyr/sys/slist.h>
 #include <zephyr/sys/util.h>
 #include "hal/ccm.h"
@@ -56,7 +55,7 @@ static void hci_setup(void *data)
 	ull_conn_init();
 
 	conn_from_pool = ll_conn_acquire();
-	zassert_not_null(conn_from_pool, "Could not allocate connection memory", NULL);
+	zassert_not_null(conn_from_pool, "Could not allocate connection memory");
 
 	test_setup(conn_from_pool);
 }

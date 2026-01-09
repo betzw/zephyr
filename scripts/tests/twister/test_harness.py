@@ -6,19 +6,13 @@
 """
 This test file contains testsuites for the Harness classes of twister
 """
-from unittest import mock
-import sys
-import os
-import pytest
-import re
 import logging as logger
+import os
+import re
 import textwrap
+from unittest import mock
 
-# ZEPHYR_BASE = os.getenv("ZEPHYR_BASE")
-from conftest import ZEPHYR_BASE
-
-sys.path.insert(0, os.path.join(ZEPHYR_BASE, "scripts/pylib/twister"))
-
+import pytest
 from twisterlib.harness import (
     Bsim,
     Console,
@@ -31,8 +25,8 @@ from twisterlib.harness import (
     Test,
 )
 from twisterlib.statuses import TwisterStatus
-from twisterlib.testsuite import TestSuite, TestCase
 from twisterlib.testinstance import TestInstance
+from twisterlib.testsuite import TestCase, TestSuite
 
 GTEST_START_STATE = " RUN      "
 GTEST_PASS_STATE = "       OK "
@@ -579,6 +573,7 @@ def test_pytest__generate_parameters_for_hardware(tmp_path, pty_value, hardware_
     # Act
     if hardware_value == 0:
         handler.get_hardware.return_value = hardware
+        handler.get_more_serials_from_device = mock.Mock(return_value=[])
         command = pytest_test._generate_parameters_for_hardware(handler)
     else:
         handler.get_hardware.return_value = None

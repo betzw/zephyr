@@ -373,6 +373,7 @@
 			interrupts = <21 3>;
 			clocks = <&pcc NPCX_CLOCK_BUS_APB1 NPCX_PWDWN_CTL4 4>;
 			vref-mv = <3300>;
+			speed-conf = <0x02 0x8901 0x0100 0x0405>;
 			status = "disabled";
 		};
 
@@ -443,6 +444,7 @@
 			interrupts = <35 3>;
 			clocks = <&pcc NPCX_CLOCK_BUS_APB3 NPCX_PWDWN_CTL3 0>;
 			smb-wui = <&wui_smb1>;
+			dma-driven;
 			status = "disabled";
 		};
 
@@ -452,6 +454,7 @@
 			interrupts = <36 3>;
 			clocks = <&pcc NPCX_CLOCK_BUS_APB3 NPCX_PWDWN_CTL3 1>;
 			smb-wui = <&wui_smb2>;
+			dma-driven;
 			status = "disabled";
 		};
 
@@ -461,6 +464,7 @@
 			interrupts = <37 3>;
 			clocks = <&pcc NPCX_CLOCK_BUS_APB3 NPCX_PWDWN_CTL3 2>;
 			smb-wui = <&wui_smb3>;
+			dma-driven;
 			status = "disabled";
 		};
 
@@ -470,6 +474,7 @@
 			interrupts = <38 3>;
 			clocks = <&pcc NPCX_CLOCK_BUS_APB3 NPCX_PWDWN_CTL3 3>;
 			smb-wui = <&wui_smb4>;
+			dma-driven;
 			status = "disabled";
 		};
 
@@ -479,6 +484,7 @@
 			interrupts = <39 3>;
 			clocks = <&pcc NPCX_CLOCK_BUS_APB3 NPCX_PWDWN_CTL3 4>;
 			smb-wui = <&wui_smb5>;
+			dma-driven;
 			status = "disabled";
 		};
 
@@ -488,6 +494,7 @@
 			interrupts = <20 3>;
 			clocks = <&pcc NPCX_CLOCK_BUS_APB3 NPCX_PWDWN_CTL3 5>;
 			smb-wui = <&wui_smb6>;
+			dma-driven;
 			status = "disabled";
 		};
 
@@ -526,6 +533,13 @@
 			status = "disabled";
 		};
 
+		v2t0: adc-v2t0 {
+			compatible = "nuvoton,npcx-adc-v2t";
+			adc-dev = <&adc0>;
+			support-npckn-v1;
+			status = "disabled";
+		};
+
 		ps2_ctrl0: ps2@400b1000 {
 			compatible = "nuvoton,npcx-ps2-ctrl";
 			reg = <0x400b1000 0x1000>;
@@ -535,13 +549,13 @@
 			/* PS2 Channels - Please use them as PS2 node */
 			ps2_channel2: io_ps2_channel2 {
 				compatible = "nuvoton,npcx-ps2-channel";
-				channel = <0x01>;
+				channel = <0x02>;
 				status = "disabled";
 			};
 
 			ps2_channel3: io_ps2_channel3 {
 				compatible = "nuvoton,npcx-ps2-channel";
-				channel = <0x02>;
+				channel = <0x03>;
 				status = "disabled";
 			};
 		};

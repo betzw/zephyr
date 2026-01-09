@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, NXP
+ * Copyright 2020, 2025 NXP
  *
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -23,6 +23,7 @@
 		accel0 = &fxos8700;
 		sdhc0 = &usdhc1;
 		mcuboot-button0 = &user_button;
+		rtc = &counter_rtc;
 	};
 
 	chosen {
@@ -151,7 +152,7 @@ arduino_serial: &lpuart2 {
 		compatible = "microchip,ksz8081";
 		reg = <0>;
 		status = "okay";
-		reset-gpios = <&gpio1 4 GPIO_ACTIVE_HIGH>;
+		reset-gpios = <&gpio1 4 GPIO_ACTIVE_LOW>;
 		int-gpios = <&gpio1 22 GPIO_ACTIVE_HIGH>;
 		microchip,interface-type = "rmii";
 	};
@@ -255,4 +256,8 @@ zephyr_udc0: &usb1 {
 		disk-name = "SD";
 		status = "okay";
 	};
+};
+
+&counter_rtc {
+	status = "okay";
 };

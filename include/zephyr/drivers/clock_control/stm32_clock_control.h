@@ -107,10 +107,6 @@
 #define STM32_FLASH_PRESCALER	STM32_CORE_PRESCALER
 #endif
 
-#define STM32_ADC_PRESCALER	DT_PROP(DT_NODELABEL(rcc), adc_prescaler)
-#define STM32_ADC12_PRESCALER	DT_PROP(DT_NODELABEL(rcc), adc12_prescaler)
-#define STM32_ADC34_PRESCALER	DT_PROP(DT_NODELABEL(rcc), adc34_prescaler)
-
 #define STM32_TIMER_PRESCALER	DT_PROP(DT_NODELABEL(rcc), timpre)
 
 /** STM2H7RS specific RCC dividers */
@@ -176,6 +172,11 @@
 #define STM32_TIMG_PRESCALER	DT_PROP(DT_NODELABEL(rcc), timg_prescaler)
 #endif /* rcc node compatible st_stm32n6_rcc and okay */
 
+/** clock 48MHz node related symbols */
+#if DT_NODE_HAS_COMPAT_STATUS(DT_NODELABEL(clk48), st_stm32_clock_mux, okay)
+#define STM32_CK48_ENABLED	1
+#endif
+
 /** PLL node related symbols */
 
 #if DT_NODE_HAS_COMPAT_STATUS(DT_NODELABEL(pll), st_stm32f2_pll_clock, okay) || \
@@ -203,7 +204,7 @@
 #define STM32_PLL_S_ENABLED	DT_NODE_HAS_PROP(DT_NODELABEL(pll), div_s)
 #define STM32_PLL_S_DIVISOR	DT_PROP_OR(DT_NODELABEL(pll), div_s, 1)
 #define STM32_PLL_FRACN_ENABLED	DT_NODE_HAS_PROP(DT_NODELABEL(pll), fracn)
-#define STM32_PLL_FRACN_VALUE	DT_PROP_OR(DT_NODELABEL(pll), fracn, 1)
+#define STM32_PLL_FRACN_VALUE	DT_PROP_OR(DT_NODELABEL(pll), fracn, 0)
 #endif
 
 #if DT_NODE_HAS_COMPAT_STATUS(DT_NODELABEL(plli2s), st_stm32f4_plli2s_clock, okay)
@@ -292,7 +293,7 @@
 #define STM32_PLL2_T_ENABLED	DT_NODE_HAS_PROP(DT_NODELABEL(pll2), div_t)
 #define STM32_PLL2_T_DIVISOR	DT_PROP_OR(DT_NODELABEL(pll2), div_t, 1)
 #define STM32_PLL2_FRACN_ENABLED	DT_NODE_HAS_PROP(DT_NODELABEL(pll2), fracn)
-#define STM32_PLL2_FRACN_VALUE	DT_PROP_OR(DT_NODELABEL(pll2), fracn, 1)
+#define STM32_PLL2_FRACN_VALUE	DT_PROP_OR(DT_NODELABEL(pll2), fracn, 0)
 #endif
 
 #if DT_NODE_HAS_COMPAT_STATUS(DT_NODELABEL(pll3), st_stm32h7_pll_clock, okay) || \
@@ -311,7 +312,7 @@
 #define STM32_PLL3_S_ENABLED	DT_NODE_HAS_PROP(DT_NODELABEL(pll3), div_s)
 #define STM32_PLL3_S_DIVISOR	DT_PROP_OR(DT_NODELABEL(pll3), div_s, 1)
 #define STM32_PLL3_FRACN_ENABLED	DT_NODE_HAS_PROP(DT_NODELABEL(pll3), fracn)
-#define STM32_PLL3_FRACN_VALUE	DT_PROP_OR(DT_NODELABEL(pll3), fracn, 1)
+#define STM32_PLL3_FRACN_VALUE	DT_PROP_OR(DT_NODELABEL(pll3), fracn, 0)
 #endif
 
 #if DT_NODE_HAS_COMPAT_STATUS(DT_NODELABEL(pll4), st_stm32mp13_pll_clock, okay)
@@ -325,7 +326,7 @@
 #define STM32_PLL4_R_ENABLED	DT_NODE_HAS_PROP(DT_NODELABEL(pll4), div_r)
 #define STM32_PLL4_R_DIVISOR	DT_PROP_OR(DT_NODELABEL(pll4), div_r, 1)
 #define STM32_PLL4_FRACN_ENABLED	DT_NODE_HAS_PROP(DT_NODELABEL(pll4), fracn)
-#define STM32_PLL4_FRACN_VALUE	DT_PROP_OR(DT_NODELABEL(pll4), fracn, 1)
+#define STM32_PLL4_FRACN_VALUE	DT_PROP_OR(DT_NODELABEL(pll4), fracn, 0)
 #endif
 
 #if DT_NODE_HAS_COMPAT_STATUS(DT_NODELABEL(pll), st_stm32f1_pll_clock, okay)
@@ -569,6 +570,10 @@
 #define STM32_MSI_PLL_MODE	DT_PROP(DT_NODELABEL(clk_msi), msi_pll_mode)
 #endif
 
+#if defined(CONFIG_SOC_SERIES_STM32L4X) && STM32_MSI_PLL_MODE && !STM32_LSE_ENABLED
+#error "On STM32L4 series, MSI PLL mode requires LSE to be enabled"
+#endif
+
 #if DT_NODE_HAS_COMPAT_STATUS(DT_NODELABEL(clk_msis), st_stm32u5_msi_clock, okay) || \
 	DT_NODE_HAS_COMPAT_STATUS(DT_NODELABEL(clk_msis), st_stm32u3_msi_clock, okay)
 #define STM32_MSIS_ENABLED	1
@@ -803,30 +808,53 @@ struct stm32_pclken {
 
 /** Device tree clocks helpers  */
 
-#define STM32_CLOCK_INFO(clk_index, node_id)				\
-	{								\
-	.enr = DT_CLOCKS_CELL_BY_IDX(node_id, clk_index, bits),		\
-	.bus = DT_CLOCKS_CELL_BY_IDX(node_id, clk_index, bus) &         \
-		GENMASK(STM32_CLOCK_DIV_SHIFT - 1, 0),                   \
-	.div = DT_CLOCKS_CELL_BY_IDX(node_id, clk_index, bus) >>	\
-		STM32_CLOCK_DIV_SHIFT,					\
+/* Get STM32 clock information for an indexed clock phandle in a DT node */
+#define STM32_CLOCK_INFO(clk_index, node_id)					\
+	{									\
+		.enr = DT_CLOCKS_CELL_BY_IDX(node_id, clk_index, bits),		\
+		.bus = DT_CLOCKS_CELL_BY_IDX(node_id, clk_index, bus) &		\
+		       GENMASK(STM32_CLOCK_DIV_SHIFT - 1, 0),			\
+		.div = DT_CLOCKS_CELL_BY_IDX(node_id, clk_index, bus) >>	\
+		       STM32_CLOCK_DIV_SHIFT,					\
 	}
+
+/* Get an array of STM32 clocks information for clocks listed in a DT node */
 #define STM32_DT_CLOCKS(node_id)					\
 	{								\
 		LISTIFY(DT_NUM_CLOCKS(node_id),				\
 			STM32_CLOCK_INFO, (,), node_id)			\
 	}
 
+/* Get an array of STM32 clocks information for clocks listed in a DT_DRV_COMPAT instance node */
 #define STM32_DT_INST_CLOCKS(inst)					\
 	STM32_DT_CLOCKS(DT_DRV_INST(inst))
 
+/* Get STM32 clock information for an indexed clock phandle in a DT_DRV_COMPAT instance node */
+#define STM32_DT_INST_CLOCK_INFO_BY_IDX(clk_index, inst)		\
+	STM32_CLOCK_INFO(clk_index, DT_DRV_INST(inst))
+
+/* Get STM32 clock information for clock index 0 in a DT_DRV_COMPAT instance node */
+#define STM32_DT_INST_CLOCK_INFO(inst)					\
+	STM32_DT_INST_CLOCK_INFO_BY_IDX(0, inst)
+
+/* Get STM32 clock information for a named clock phandle in DT node */
+#define STM32_CLOCK_INFO_BY_NAME(node_id, name)				\
+	{								\
+		.enr = DT_CLOCKS_CELL_BY_NAME(node_id, name, bits),	\
+		.bus = DT_CLOCKS_CELL_BY_NAME(node_id, name, bus) &	\
+		       GENMASK(STM32_CLOCK_DIV_SHIFT - 1, 0),		\
+		.div = DT_CLOCKS_CELL_BY_NAME(node_id, name, bus) >>	\
+		       STM32_CLOCK_DIV_SHIFT,				\
+	}
+
+/* Get STM32 clock information for named clock phandle in a DT_DRV_COMPAT instance node */
+#define STM32_DT_INST_CLOCK_INFO_BY_NAME(inst, name)			\
+	STM32_CLOCK_INFO_BY_NAME(DT_DRV_INST(inst), name)
+
+/* Return true only if at least an enabled instance of the DT_DRV_COMPAT has at least 2 clocks */
 #define STM32_DOMAIN_CLOCK_INST_SUPPORT(inst) DT_INST_CLOCKS_HAS_IDX(inst, 1) ||
 #define STM32_DT_INST_DEV_DOMAIN_CLOCK_SUPPORT				\
 		(DT_INST_FOREACH_STATUS_OKAY(STM32_DOMAIN_CLOCK_INST_SUPPORT) 0)
-
-#define STM32_DOMAIN_CLOCK_SUPPORT(id) DT_CLOCKS_HAS_IDX(DT_NODELABEL(id), 1) ||
-#define STM32_DT_DEV_DOMAIN_CLOCK_SUPPORT					\
-		(DT_FOREACH_STATUS_OKAY(STM32_DOMAIN_CLOCK_SUPPORT) 0)
 
 /** Clock source binding accessors */
 
@@ -852,7 +880,7 @@ struct stm32_pclken {
  * @param clock Clock bit field value.
  */
 #define STM32_DT_CLKSEL_MASK_GET(clock) \
-	(((clock) >> STM32_DT_CLKSEL_MASK_SHIFT) & STM32_DT_CLKSEL_MASK_MASK)
+	BIT_MASK((((clock) >> STM32_DT_CLKSEL_WIDTH_SHIFT) & STM32_DT_CLKSEL_WIDTH_MASK) + 1)
 
 /**
  * @brief Obtain value field from clock source selection configuration.

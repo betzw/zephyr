@@ -445,9 +445,11 @@ static void avdtp_tx_frags(struct bt_avdtp *session, struct net_buf *buf,
 			struct bt_avdtp_start_sig_hdr *start_hdr;
 			struct bt_avdtp_single_sig_hdr *sig_hdr;
 
+			__ASSERT_NO_MSG(buf->len >= sizeof(*sig_hdr));
 			sig_hdr = net_buf_pull_mem(buf, sizeof(*sig_hdr));
 			user_data->hdr = *sig_hdr;
 
+			__ASSERT_NO_MSG(net_buf_tailroom(frag) >= sizeof(*start_hdr));
 			start_hdr = net_buf_add(frag, sizeof(*start_hdr));
 			/* use same transaction label and message type */
 			start_hdr->hdr = (user_data->hdr.hdr & ~AVDTP_PKT_MASK) |
@@ -455,6 +457,7 @@ static void avdtp_tx_frags(struct bt_avdtp *session, struct net_buf *buf,
 			start_hdr->num_of_signal_pkts = user_data->frag_count;
 			start_hdr->signal_id = user_data->hdr.signal_id;
 
+			__ASSERT_NO_MSG(mtu >= sizeof(*start_hdr));
 			len = mtu - sizeof(*start_hdr);
 			if (len >= buf->len) {
 				LOG_ERR("The start packet can send all data");
@@ -468,11 +471,13 @@ static void avdtp_tx_frags(struct bt_avdtp *session, struct net_buf *buf,
 			uint8_t pkt_type = (user_data->frag_count == user_data->current_frag) ?
 					   BT_AVDTP_PACKET_TYPE_END : BT_AVDTP_PACKET_TYPE_CONTINUE;
 
+			__ASSERT_NO_MSG(net_buf_tailroom(frag) >= sizeof(*cont_hdr));
 			cont_hdr = net_buf_add(frag, sizeof(*cont_hdr));
 			/* use same transaction label and message type */
 			cont_hdr->hdr = (user_data->hdr.hdr & ~AVDTP_PKT_MASK) |
 					AVDTP_PKT_PREP(pkt_type);
 
+			__ASSERT_NO_MSG(mtu >= sizeof(*cont_hdr));
 			len = mtu - sizeof(*cont_hdr);
 			if (pkt_type == BT_AVDTP_PACKET_TYPE_CONTINUE && len >= buf->len) {
 				LOG_ERR("The continue packet can send all data");
@@ -596,6 +601,11 @@ static void avdtp_set_status(struct bt_avdtp_req *req, struct net_buf *buf, uint
 	} else if (msg_type == BT_AVDTP_REJECT) {
 		if (buf->len >= sizeof(req->status)) {
 			req->status = net_buf_pull_u8(buf);
+
+			if (req->status == BT_AVDTP_SUCCESS) {
+				LOG_WRN("Reject frame with success status");
+				req->status = BT_AVDTP_BAD_HEADER_FORMAT;
+			}
 		} else {
 			LOG_WRN("Invalid RSP frame");
 			req->status = BT_AVDTP_BAD_LENGTH;
@@ -1134,7 +1144,7 @@ static void avdtp_open_rsp(struct bt_avdtp *session, struct net_buf *buf, uint8_
 	}
 }
 
-static void avdtp_handle_reject(struct net_buf *buf, struct bt_avdtp_req *req)
+static void avdtp_handle_reject_with_acp_seid(struct net_buf *buf, struct bt_avdtp_req *req)
 {
 	if (buf->len >= sizeof(uint8_t)) {
 		uint8_t acp_seid;
@@ -1211,14 +1221,24 @@ static void avdtp_start_rsp(struct bt_avdtp *session, struct net_buf *buf, uint8
 
 	k_work_cancel_delayable(&session->timeout_work);
 
-	if (msg_type == BT_AVDTP_ACCEPT) {
-		bt_avdtp_set_state_lock(CTRL_REQ(req)->sep, AVDTP_STREAMING);
-	} else if (msg_type == BT_AVDTP_REJECT) {
-		avdtp_handle_reject(buf, req);
+	if (msg_type == BT_AVDTP_REJECT) {
+		avdtp_handle_reject_with_acp_seid(buf, req);
 	}
 
 	if (req->status == BT_AVDTP_SUCCESS) {
 		avdtp_set_status(req, buf, msg_type);
+	}
+
+	if (req->status == BT_AVDTP_SUCCESS) {
+		bt_avdtp_set_state_lock(CTRL_REQ(req)->sep, AVDTP_STREAMING);
+	} else {
+		/* From spec, if start cmd's initiator is sink, the endpoint state is set as
+		 * AVDTP_STREAMING after sending start cmd. So if cmd fail, need to change back
+		 * as AVDTP_OPEN.
+		 */
+		if (CTRL_REQ(req)->sep->sep_info.tsep == BT_AVDTP_SINK) {
+			bt_avdtp_set_state_lock(CTRL_REQ(req)->sep, AVDTP_OPEN);
+		}
 	}
 
 	bt_avdtp_clear_req(session);
@@ -1402,14 +1422,16 @@ static void avdtp_suspend_rsp(struct bt_avdtp *session, struct net_buf *buf, uin
 
 	k_work_cancel_delayable(&session->timeout_work);
 
-	if (msg_type == BT_AVDTP_ACCEPT) {
-		bt_avdtp_set_state_lock(CTRL_REQ(req)->sep, AVDTP_OPEN);
-	} else if (msg_type == BT_AVDTP_REJECT) {
-		avdtp_handle_reject(buf, req);
+	if (msg_type == BT_AVDTP_REJECT) {
+		avdtp_handle_reject_with_acp_seid(buf, req);
 	}
 
 	if (req->status == BT_AVDTP_SUCCESS) {
 		avdtp_set_status(req, buf, msg_type);
+	}
+
+	if (req->status == BT_AVDTP_SUCCESS) {
+		bt_avdtp_set_state_lock(CTRL_REQ(req)->sep, AVDTP_OPEN);
 	}
 
 	bt_avdtp_clear_req(session);
@@ -2354,7 +2376,7 @@ int bt_avdtp_parse_capability_codec(struct net_buf *buf, uint8_t *codec_type,
 		return -EINVAL;
 	}
 
-	if (codec_type == NULL || *codec_info_element == NULL || codec_info_element_len == NULL) {
+	if (codec_type == NULL || codec_info_element == NULL || codec_info_element_len == NULL) {
 		LOG_DBG("Error: parameters not valid");
 		return -EINVAL;
 	}

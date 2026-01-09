@@ -7,34 +7,26 @@ Tests for runner.py classes
 """
 
 import errno
-from unittest import mock
 import os
 import pathlib
-import pytest
 import re
 import subprocess
 import sys
-import yaml
-
 from collections import deque
 from contextlib import nullcontext
-from elftools.elf.sections import SymbolTableSection
 from typing import List
+from unittest import mock
 
-ZEPHYR_BASE = os.getenv("ZEPHYR_BASE")
-sys.path.insert(0, os.path.join(ZEPHYR_BASE, "scripts/pylib/twister"))
-
-from twisterlib.statuses import TwisterStatus
+import pytest
+import yaml
+from elftools.elf.sections import SymbolTableSection
 from twisterlib.error import BuildError
 from twisterlib.harness import Pytest
+from twisterlib.runner import CMake, ExecutionCounter, FilterBuilder, ProjectBuilder, TwisterRunner
+from twisterlib.statuses import TwisterStatus
 
-from twisterlib.runner import (
-    CMake,
-    ExecutionCounter,
-    FilterBuilder,
-    ProjectBuilder,
-    TwisterRunner
-)
+from . import ZEPHYR_BASE
+
 
 @pytest.fixture
 def mocked_instance(tmp_path):
@@ -1672,10 +1664,12 @@ def test_projectbuilder_determine_testcases(
 TESTDATA_8 = [
     (
         ['addition.al'],
+        ['keep.artifact'],
         'dummy',
-        ['addition.al', '.config', 'zephyr']
+        ['addition.al', 'keep.artifact', '.config', 'zephyr']
     ),
     (
+        [],
         [],
         'all',
         ['.config', 'zephyr', 'testsuite_extra.conf', 'twister']
@@ -1683,7 +1677,7 @@ TESTDATA_8 = [
 ]
 
 @pytest.mark.parametrize(
-    'additional_keep, runtime_artifact_cleanup, expected_files',
+    'additional_keep, keep_artifacts, runtime_artifact_cleanup, expected_files',
     TESTDATA_8,
     ids=['additional keep', 'all cleanup']
 )
@@ -1691,6 +1685,7 @@ def test_projectbuilder_cleanup_artifacts(
     tmpdir,
     mocked_jobserver,
     additional_keep,
+    keep_artifacts,
     runtime_artifact_cleanup,
     expected_files
 ):
@@ -1721,12 +1716,16 @@ def test_projectbuilder_cleanup_artifacts(
     addition_al = tmpdir.join('addition.al')
     addition_al.write_text('dummy', 'utf-8')
 
+    keep_art = tmpdir.join('keep.artifact')
+    keep_art.write_text('dummy', 'utf-8')
+
     instance_mock = mock.Mock()
     instance_mock.build_dir = tmpdir
     env_mock = mock.Mock()
 
     pb = ProjectBuilder(instance_mock, env_mock, mocked_jobserver)
-    pb.options = mock.Mock(runtime_artifact_cleanup=runtime_artifact_cleanup)
+    pb.options = mock.Mock(runtime_artifact_cleanup=runtime_artifact_cleanup,
+                           keep_artifacts=keep_artifacts)
 
     pb.cleanup_artifacts(additional_keep)
 

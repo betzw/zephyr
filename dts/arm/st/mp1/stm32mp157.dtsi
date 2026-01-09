@@ -42,6 +42,15 @@
 		reg = <0x10000000 DT_SIZE_K(320)>;
 	};
 
+	clocks {
+		/* NOTE: clocks must be enabled by Cortex-A */
+		clk_hse: clk-hse {
+			#clock-cells = <0>;
+			compatible = "st,stm32-hse-clock";
+			status = "disabled";
+		};
+	};
+
 	soc {
 		compatible = "st,stm32mp157", "st,stm32mp1", "simple-bus";
 
@@ -61,7 +70,7 @@
 			compatible = "st,stm32g0-exti", "st,stm32-exti";
 			interrupt-controller;
 			#interrupt-cells = <1>;
-			#address-cells = <1>;
+			#address-cells = <0>;
 			reg = <0x5000d000 0x400>;
 			clocks = <&rcc STM32_CLOCK(APB3, 11)>;
 			num-lines = <96>;
@@ -223,6 +232,7 @@
 			#size-cells = <0>;
 			clocks = <&rcc STM32_CLOCK(APB2, 8)>;
 			interrupts = <35 5>;
+			st,spi-data-width = "full-4-to-32-bit";
 			status = "disabled";
 		};
 
@@ -233,6 +243,7 @@
 			#size-cells = <0>;
 			clocks = <&rcc STM32_CLOCK(APB1, 11)>;
 			interrupts = <36 5>;
+			st,spi-data-width = "full-4-to-32-bit";
 			status = "disabled";
 		};
 
@@ -243,6 +254,7 @@
 			#size-cells = <0>;
 			clocks = <&rcc STM32_CLOCK(APB1, 12)>;
 			interrupts = <51 5>;
+			st,spi-data-width = "full-4-to-32-bit";
 			status = "disabled";
 		};
 
@@ -253,6 +265,7 @@
 			#size-cells = <0>;
 			clocks = <&rcc STM32_CLOCK(APB2, 9)>;
 			interrupts = <84 5>;
+			st,spi-data-width = "full-4-to-16-bit";
 			status = "disabled";
 		};
 
@@ -263,6 +276,7 @@
 			#size-cells = <0>;
 			clocks = <&rcc STM32_CLOCK(APB2, 10)>;
 			interrupts = <85 5>;
+			st,spi-data-width = "full-4-to-16-bit";
 			status = "disabled";
 		};
 

@@ -4,8 +4,9 @@
 # Copyright 2022 NXP
 # SPDX-License-Identifier: Apache-2.0
 
+import contextlib
 import logging
-import multiprocessing
+import multiprocessing as mp
 import os
 import pathlib
 import pickle
@@ -29,6 +30,7 @@ from packaging import version
 from twisterlib.cmakecache import CMakeCache
 from twisterlib.environment import canonical_zephyr_base
 from twisterlib.error import BuildError, ConfigurationError, StatusAttributeError
+from twisterlib.hardwaremap import DUT
 from twisterlib.log_helper import setup_logging
 from twisterlib.statuses import TwisterStatus
 
@@ -51,6 +53,11 @@ from twisterlib.platform import Platform
 from twisterlib.testinstance import TestInstance
 from twisterlib.testplan import change_skip_to_error_if_integration
 from twisterlib.testsuite import TestSuite
+
+# Prefer 'fork' on POSIX to maintain pre-3.14 behavior
+if os.name == "posix":
+    with contextlib.suppress(RuntimeError):
+        mp.set_start_method("fork")
 
 try:
     from yaml import CSafeLoader as SafeLoader
@@ -878,7 +885,7 @@ class ProjectBuilder(FilterBuilder):
         self.filtered_tests = 0
         self.options = env.options
         self.env = env
-        self.duts = None
+        self.duts: list[DUT] = []
 
     @property
     def trace(self) -> bool:
@@ -1191,7 +1198,7 @@ class ProjectBuilder(FilterBuilder):
                     mode == "passed"
                     or (mode == "all" and self.instance.reason != "CMake build failure")
                 ):
-                    self.cleanup_artifacts(self.options.keep_artifacts)
+                    self.cleanup_artifacts()
             except StatusAttributeError as sae:
                 logger.error(str(sae))
                 self.instance.status = TwisterStatus.ERROR
@@ -1307,6 +1314,7 @@ class ProjectBuilder(FilterBuilder):
             ]
 
         allow += additional_keep
+        allow += self.options.keep_artifacts
 
         if self.options.runtime_artifact_cleanup == 'all':
             allow += [os.path.join('twister', 'testsuite_extra.conf')]
@@ -1813,7 +1821,7 @@ class TwisterRunner:
         self.env = env
         self.instances: dict[str, TestInstance] = instances
         self.suites: dict[str, TestSuite] = suites
-        self.duts = None
+        self.duts: list[DUT] = []
         self.jobs = 1
         self.results = None
         self.jobserver = None
@@ -1836,9 +1844,9 @@ class TwisterRunner:
         if self.options.jobs:
             self.jobs = self.options.jobs
         elif self.options.build_only:
-            self.jobs = multiprocessing.cpu_count() * 2
+            self.jobs = mp.cpu_count() * 2
         else:
-            self.jobs = multiprocessing.cpu_count()
+            self.jobs = mp.cpu_count()
 
         if sys.platform == "linux":
             if os.name == 'posix':

@@ -43,7 +43,6 @@ static K_THREAD_STACK_DEFINE(iface_wq_stack, CONFIG_WIFI_NM_WPA_SUPPLICANT_WQ_ST
 #include "wpa_supplicant/config.h"
 #include "wpa_supplicant_i.h"
 #include "fst/fst.h"
-#include "includes.h"
 #include "wpa_cli_zephyr.h"
 #include "ctrl_iface_zephyr.h"
 #ifdef CONFIG_WIFI_NM_HOSTAPD_AP
@@ -85,6 +84,9 @@ static const struct wifi_mgmt_ops mgmt_ops = {
 	.get_conn_params = supplicant_get_wifi_conn_params,
 	.wps_config = supplicant_wps_config,
 	.set_bss_max_idle_period = supplicant_set_bss_max_idle_period,
+#ifdef CONFIG_WIFI_NM_WPA_SUPPLICANT_BGSCAN
+	.set_bgscan = supplicant_set_bgscan,
+#endif /* CONFIG_WIFI_NM_WPA_SUPPLICANT_BGSCAN */
 #ifdef CONFIG_AP
 	.ap_enable = supplicant_ap_enable,
 	.ap_disable = supplicant_ap_disable,

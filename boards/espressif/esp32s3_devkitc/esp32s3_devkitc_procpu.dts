@@ -18,6 +18,8 @@
 	aliases {
 		i2c-0 = &i2c0;
 		watchdog0 = &wdt0;
+		uart-0 = &uart0;
+		sw0 = &button0;
 	};
 
 	chosen {
@@ -27,11 +29,6 @@
 		zephyr,flash = &flash0;
 		zephyr,code-partition = &slot0_partition;
 		zephyr,bt-hci = &esp32_bt_hci;
-	};
-
-	aliases {
-		uart-0 = &uart0;
-		sw0 = &button0;
 	};
 
 	buttons {
@@ -91,13 +88,11 @@
 &i2s0 {
 	pinctrl-0 = <&i2s0_default>;
 	pinctrl-names = "default";
-	status = "disabled";
 };
 
 &i2s1 {
 	pinctrl-0 = <&i2s1_default>;
 	pinctrl-names = "default";
-	status = "disabled";
 };
 
 &spi2 {
