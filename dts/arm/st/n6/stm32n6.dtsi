@@ -1331,15 +1331,22 @@
 			status = "disabled";
 		};
 
-		npu: npu@580c0000 {
+		npu: npu@580e0000 {
 			compatible = "st,stm32-npu";
-			reg = <0x580c0000 0x1000>;
+			reg = <0x580e0000 0x1000>;
 			clocks = <&rcc STM32_CLOCK(AHB5, 31)>,
 				 <&rcc STM32_CLOCK(AHB5, 30)>;
 			clock-names = "npu", "cacheaxi";
 			resets = <&rctl STM32_RESET(AHB5, 31)>,
 				 <&rctl STM32_RESET(AHB5, 30)>;
 			status = "disabled";
+		};
+
+		npu_cache: npu_cache@580dfc00 {
+			compatible = "st,stm32-npu-cache";
+			npu = <&npu>; // Dependency reference
+			reg = <0x580dfc00 0x1000>;
+			status = "okay";
 		};
 
 		venc: venc@58005000 {

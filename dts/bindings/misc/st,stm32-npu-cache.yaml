@@ -1,0 +1,23 @@
+# Copyright (c) 2025 STMicroelectronics
+# SPDX-License-Identifier: Apache-2.0
+
+description: STM32 NPU Cache block
+
+compatible: "st,stm32-npu-cache"
+
+include: base.yaml
+
+properties:
+  reg:
+    required: true
+
+  npu:
+    type: phandle
+    required: true
+    description: Phandle to the associated NPU node
+
+  status:
+    type: string
+    required: false
+    description: |
+      Indicates if the device is enabled ("okay") or disabled ("disabled").

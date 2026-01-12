@@ -45,9 +45,4 @@ config STM32N6_RIF_OPEN
 	  configured during SoC initialization. Zephyr running with Secure privileges has full
 	  access to all SoC resources.
 
-config STM32N6_ENABLE_NPU_CACHE
-	bool "Enable NPU's cache"
-	default y
-	depends on STM32N6_NPU
-
 endif # SOC_SERIES_STM32N6X
